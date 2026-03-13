@@ -2,8 +2,10 @@
 
 import { useState, useRef } from 'react'
 import { useBoardContext } from '@/lib/board-store'
-// 🔥 Trash2 icon add kiya
-import { Star, Users, MoreHorizontal, LayoutDashboard, Plus, Check, X, Palette, UploadCloud, Trash2 } from 'lucide-react'
+import { 
+  Star, Users, MoreHorizontal, LayoutDashboard, Plus, 
+  Check, X, Palette, UploadCloud, Trash2, ChevronDown 
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -18,9 +20,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ScrollArea } from '@/components/ui/scroll-area'
-// 🔥 deleteBoard action import kiya
 import { createBoard, updateBoardBackground, deleteBoard } from '@/actions/board'
-
 
 const PRESET_BACKGROUNDS = [
   'linear-gradient(to right bottom, #6366f1, #a855f7, #ec4899)',
@@ -39,7 +39,6 @@ export function BoardHeader() {
   const [newBoardTitle, setNewBoardTitle] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
-  // 🔥 Delete state add ki
   const [isDeleting, setIsDeleting] = useState(false) 
   
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -88,7 +87,6 @@ export function BoardHeader() {
     reader.readAsDataURL(file)
   }
 
-  // 🔥 DELETE BOARD LOGIC 🔥
   const handleDeleteBoard = async () => {
     if (window.confirm("Are you sure you want to delete this board? All lists and cards will be permanently removed.")) {
       setIsDeleting(true)
@@ -103,121 +101,138 @@ export function BoardHeader() {
   }
 
   return (
-    <div className="flex h-14 items-center justify-between px-4 bg-black/20 backdrop-blur-sm border-b border-white/10 relative z-10 text-white">
+    <div className="flex h-16 items-center justify-between px-4 md:px-6 bg-black/30 backdrop-blur-2xl border-b border-white/10 relative z-10 text-white shadow-sm">
       <div className="flex items-center gap-3">
         
+        {/* 🔥 PREMIUM BOARD SWITCHER BUTTON 🔥 */}
         <DropdownMenu onOpenChange={(open) => { if (!open) setIsCreating(false) }}>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="text-lg font-bold px-3 hover:bg-white/20 transition-colors h-9 bg-white/10 shadow-sm border border-white/20">
-              <LayoutDashboard className="mr-2 h-4 w-4" />
-              {state.board.title}
+            <Button 
+              variant="ghost" 
+              className="text-lg font-bold px-4 h-10 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-xl border border-white/10 shadow-sm transition-all duration-300 gap-2 focus-visible:ring-1 focus-visible:ring-white/50"
+            >
+              <LayoutDashboard className="h-4 w-4 text-white/80" />
+              <span className="tracking-tight">{state.board.title}</span>
+              <ChevronDown className="h-4 w-4 text-white/50" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-64 z-50">
-            <DropdownMenuLabel>Your Boards</DropdownMenuLabel>
-            <DropdownMenuSeparator />
+          <DropdownMenuContent align="start" className="w-64 z-50 bg-black/80 backdrop-blur-3xl border-white/10 text-white rounded-2xl shadow-2xl p-2">
+            <DropdownMenuLabel className="text-white/50 font-medium text-xs uppercase tracking-widest px-2 pb-2">Your Boards</DropdownMenuLabel>
             <ScrollArea className="max-h-[300px]">
-              <DropdownMenuGroup>
+              <DropdownMenuGroup className="space-y-1">
                 {state.availableBoards?.map((b) => (
-                  <DropdownMenuItem key={b.id} onClick={() => { if (b.id !== state.board.id) window.location.href = `/?boardId=${b.id}` }} className="cursor-pointer justify-between">
-                    <span className="truncate pr-2">{b.title}</span>
-                    {b.id === state.board.id && <Check className="h-4 w-4 text-primary shrink-0" />}
+                  <DropdownMenuItem 
+                    key={b.id} 
+                    onClick={() => { if (b.id !== state.board.id) window.location.href = `/?boardId=${b.id}` }} 
+                    className={`cursor-pointer justify-between rounded-lg px-3 py-2 transition-colors ${b.id === state.board.id ? 'bg-white/15' : 'hover:bg-white/10 focus:bg-white/10'}`}
+                  >
+                    <span className="truncate pr-2 font-medium">{b.title}</span>
+                    {b.id === state.board.id && <Check className="h-4 w-4 text-white" />}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuGroup>
             </ScrollArea>
-            <DropdownMenuSeparator />
+            <DropdownMenuSeparator className="bg-white/10 my-2" />
             {isCreating ? (
               <div className="p-2 space-y-2">
-                <Input autoFocus placeholder="New board title..." value={newBoardTitle} onChange={(e) => setNewBoardTitle(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleCreateBoard() }} disabled={isLoading} className="h-8 text-sm border-border text-foreground" />
+                <Input 
+                  autoFocus 
+                  placeholder="New board title..." 
+                  value={newBoardTitle} 
+                  onChange={(e) => setNewBoardTitle(e.target.value)} 
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleCreateBoard() }} 
+                  disabled={isLoading} 
+                  className="h-9 text-sm bg-white/10 border-white/20 text-white placeholder:text-white/50 rounded-lg focus-visible:ring-1 focus-visible:ring-white/50" 
+                />
                 <div className="flex gap-2">
-                  <Button size="sm" className="w-full h-8" onClick={handleCreateBoard} disabled={isLoading || !newBoardTitle.trim()}>Create</Button>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => setIsCreating(false)}><X className="h-4 w-4" /></Button>
+                  <Button size="sm" className="w-full h-8 bg-white text-black hover:bg-white/90 rounded-lg font-bold" onClick={handleCreateBoard} disabled={isLoading || !newBoardTitle.trim()}>
+                    Create
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-white/20 rounded-lg" onClick={() => setIsCreating(false)}>
+                    <X className="h-4 w-4 text-white" />
+                  </Button>
                 </div>
               </div>
             ) : (
-              <DropdownMenuItem onClick={(e) => { e.preventDefault(); setIsCreating(true) }} className="cursor-pointer text-primary font-medium">
+              <DropdownMenuItem onClick={(e) => { e.preventDefault(); setIsCreating(true) }} className="cursor-pointer text-white hover:bg-white/10 focus:bg-white/10 rounded-lg px-3 py-2 font-medium transition-colors">
                 <Plus className="mr-2 h-4 w-4" /> Create new board
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Button variant="ghost" size="icon" className="h-9 w-9 hover:bg-white/20 hidden sm:flex"><Star className="h-4 w-4" /></Button>
-        <div className="h-4 w-px bg-white/20 hidden sm:block" />
-        <Button variant="ghost" className="h-9 hover:bg-white/20 font-medium hidden sm:flex"><Users className="mr-2 h-4 w-4" />Workspace visible</Button>
+        <div className="h-5 w-px bg-white/20 hidden sm:block ml-2" />
+        <Button variant="ghost" className="h-9 hover:bg-white/20 font-medium hidden sm:flex text-white/80 rounded-xl px-3 transition-colors">
+          <Users className="mr-2 h-4 w-4" />Workspace visible
+        </Button>
       </div>
 
       <div className="flex items-center gap-2">
         <div className="flex -space-x-2 mr-2">
-          <Avatar className="h-8 w-8 border-2 border-background ring-1 ring-white/20 shadow-sm">
-            <AvatarFallback className="text-[10px] font-bold bg-indigo-500 text-white">KB</AvatarFallback>
+          <Avatar className="h-8 w-8 border-2 border-transparent ring-2 ring-white/10 shadow-sm cursor-pointer hover:scale-105 transition-transform">
+            <AvatarFallback className="text-[10px] font-bold bg-white/20 text-white backdrop-blur-md">KB</AvatarFallback>
           </Avatar>
         </div>
         
+        {/* Background Palette Popover */}
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-9 w-9 hover:bg-white/20" title="Change Background">
-              <Palette className="h-5 w-5" />
+            <Button variant="ghost" size="icon" className="h-9 w-9 text-white/80 hover:text-white hover:bg-white/20 rounded-xl transition-colors" title="Change Background">
+              <Palette className="h-4 w-4" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent align="end" className="w-72 p-4">
+          <PopoverContent align="end" className="w-72 p-4 bg-black/80 backdrop-blur-3xl border-white/10 text-white rounded-2xl shadow-2xl z-50">
             <h4 className="font-semibold text-sm mb-4 text-center">Board Background</h4>
             
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-semibold text-muted-foreground mb-2 block">Colors & Gradients</label>
+                <label className="text-[10px] uppercase tracking-widest text-white/50 mb-2 block font-bold">Colors & Gradients</label>
                 <div className="grid grid-cols-4 gap-2">
                   {PRESET_BACKGROUNDS.map((bg, idx) => (
                     <div 
                       key={idx} 
                       onClick={() => handleUpdateBackground(bg)}
-                      className="h-10 rounded-md cursor-pointer border border-black/10 hover:scale-105 active:scale-95 transition-all shadow-sm"
+                      className="h-10 rounded-lg cursor-pointer border border-white/10 hover:border-white/50 hover:scale-110 active:scale-95 transition-all shadow-sm"
                       style={{ background: bg }}
                     />
                   ))}
                 </div>
               </div>
 
-              <div className="space-y-2 pt-3 border-t border-border/50">
-                <label className="text-xs font-semibold text-muted-foreground block flex items-center gap-1">
-                  <UploadCloud className="w-3 h-3" /> Upload Custom Image
+              <div className="space-y-2 pt-4 border-t border-white/10">
+                <label className="text-[10px] uppercase tracking-widest text-white/50 block font-bold mb-2">
+                  Custom Background
                 </label>
                 
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  className="hidden" 
-                  ref={fileInputRef} 
-                  onChange={handleImageUpload} 
-                />
+                <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleImageUpload} />
                 
                 <Button 
                   variant="outline" 
-                  className="w-full h-10 border-dashed border-2 hover:bg-muted/50 transition-colors"
+                  className="w-full h-10 border-dashed border-2 border-white/20 bg-white/5 hover:bg-white/10 text-white hover:text-white transition-all rounded-xl"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isUploading}
                 >
-                  {isUploading ? "Uploading..." : "Click to Upload Image"}
+                  <UploadCloud className="w-4 h-4 mr-2 text-white/70" />
+                  {isUploading ? "Uploading..." : "Upload Image"}
                 </Button>
-                <p className="text-[10px] text-muted-foreground text-center">Max size: 2MB (JPG, PNG)</p>
+                <p className="text-[10px] text-white/40 text-center mt-1">Max size: 2MB (JPG, PNG)</p>
               </div>
             </div>
           </PopoverContent>
         </Popover>
 
-        {/* 🔥 MORE MENU WITH DELETE OPTION 🔥 */}
+        {/* More Options / Delete Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-9 w-9 hover:bg-white/20">
+            <Button variant="ghost" size="icon" className="h-9 w-9 text-white/80 hover:text-white hover:bg-white/20 rounded-xl transition-colors">
               <MoreHorizontal className="h-5 w-5" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuLabel>Board Menu</DropdownMenuLabel>
-            <DropdownMenuSeparator />
+          <DropdownMenuContent align="end" className="w-48 bg-black/80 backdrop-blur-3xl border-white/10 text-white rounded-xl shadow-2xl p-1">
+            <DropdownMenuLabel className="text-white/50 text-xs px-2 py-1.5 uppercase tracking-widest font-bold">Options</DropdownMenuLabel>
+            <DropdownMenuSeparator className="bg-white/10 my-1" />
             <DropdownMenuItem 
-              className="text-destructive focus:bg-destructive/10 cursor-pointer font-medium" 
+              className="text-red-400 focus:bg-red-500/20 focus:text-red-300 cursor-pointer font-medium rounded-lg px-3 py-2 transition-colors" 
               onClick={handleDeleteBoard}
               disabled={isDeleting}
             >

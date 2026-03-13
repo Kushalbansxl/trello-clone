@@ -369,35 +369,44 @@ const sensors = useSensors(
         </ScrollArea>
       </div>
 
-      {/* DYNAMIC MAC OS STYLE BOTTOM DOCK */}
-      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-background/60 backdrop-blur-2xl border border-border shadow-2xl rounded-[2rem] p-2 flex items-center gap-2 z-50 transition-all">
+     {/* SLEEK FLOATING GLASS DOCK (Original Position Maintained) */}
+      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-black/50 backdrop-blur-3xl border border-white/10 shadow-2xl rounded-full p-1.5 flex items-center gap-1 z-50 transition-all">
         
-        <Button 
-          variant={currentView === 'inbox' ? 'secondary' : 'ghost'} 
+        <button 
           onClick={() => setCurrentView('inbox')}
-          className={`rounded-2xl px-6 py-7 flex flex-col gap-1.5 h-auto transition-all ${currentView === 'inbox' ? 'bg-primary/15 text-primary scale-105 shadow-inner border border-primary/20' : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'}`}
+          className={`flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 rounded-full transition-all duration-300 ${
+            currentView === 'inbox' 
+              ? 'bg-white/15 text-white border border-white/5 shadow-sm' 
+              : 'text-white/40 hover:text-white hover:bg-white/5 border border-transparent'
+          }`}
         >
-          <Inbox className="h-5 w-5" />
-          <span className="text-[11px] font-semibold tracking-wide">Inbox</span>
-        </Button>
+          <Inbox className="h-4 w-4" />
+          <span className="text-xs md:text-sm font-medium tracking-wide">Inbox</span>
+        </button>
         
-        <Button 
-          variant={currentView === 'board' ? 'secondary' : 'ghost'} 
+        <button 
           onClick={() => setCurrentView('board')}
-          className={`rounded-2xl px-6 py-7 flex flex-col gap-1.5 h-auto transition-all ${currentView === 'board' ? 'bg-primary/15 text-primary scale-105 shadow-inner border border-primary/20' : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'}`}
+          className={`flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 rounded-full transition-all duration-300 ${
+            currentView === 'board' 
+              ? 'bg-white/15 text-white border border-white/5 shadow-sm' 
+              : 'text-white/40 hover:text-white hover:bg-white/5 border border-transparent'
+          }`}
         >
-          <LayoutDashboard className="h-5 w-5" />
-          <span className="text-[11px] font-bold tracking-wide">Board</span>
-        </Button>
+          <LayoutDashboard className="h-4 w-4" />
+          <span className="text-xs md:text-sm font-medium tracking-wide">Board</span>
+        </button>
         
-        <Button 
-          variant={currentView === 'planner' ? 'secondary' : 'ghost'} 
+        <button 
           onClick={() => setCurrentView('planner')}
-          className={`rounded-2xl px-6 py-7 flex flex-col gap-1.5 h-auto transition-all ${currentView === 'planner' ? 'bg-primary/15 text-primary scale-105 shadow-inner border border-primary/20' : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'}`}
+          className={`flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 rounded-full transition-all duration-300 ${
+            currentView === 'planner' 
+              ? 'bg-white/15 text-white border border-white/5 shadow-sm' 
+              : 'text-white/40 hover:text-white hover:bg-white/5 border border-transparent'
+          }`}
         >
-          <CalendarIcon className="h-5 w-5" />
-          <span className="text-[11px] font-semibold tracking-wide">Planner</span>
-        </Button>
+          <CalendarIcon className="h-4 w-4" />
+          <span className="text-xs md:text-sm font-medium tracking-wide">Planner</span>
+        </button>
 
       </div>
 
