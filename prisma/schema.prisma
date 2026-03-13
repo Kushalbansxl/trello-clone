@@ -2,7 +2,7 @@
 
 generator client {
   provider = "prisma-client"
-  output = "../generated/prisma"
+  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -10,18 +10,21 @@ datasource db {
 }
 
 model Board {
-  id        String   @id @default(cuid())
-  title     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  lists     List[]
+  id         String   @id @default(cuid())
+  title      String
+  background String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  lists      List[]
+  labels     Label[]  // Labels are often board-specific
+  members    Member[] // Members who have access to the board
 }
 
 model List {
   id        String   @id @default(cuid())
   title     String
-  order     Int      
-  color     String?  // <-- THIS WAS MISSING
+  order     Int
+  color     String?
   boardId   String
   board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
   cards     Card[]
@@ -32,15 +35,59 @@ model List {
 }
 
 model Card {
-  id          String   @id @default(cuid())
+  id          String      @id @default(cuid())
   title       String
   description String?
-  order       Int      
-  coverImage  String?  // <-- THIS WAS MISSING
+  order       Int
+  coverImage  String?
+  dueDate     DateTime?   // Added Due Date
   listId      String
-  list        List     @relation(fields: [listId], references: [id], onDelete: Cascade)
+  list        List        @relation(fields: [listId], references: [id], onDelete: Cascade)
+  
+  // Relations
+  labels      Label[]     // Many-to-many
+  members     Member[]    // Many-to-many
+  checklists  Checklist[] // One-to-many
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([listId])
+}
+
+// --- NEW MODELS ---
+
+model Label {
+  id      String  @id @default(cuid())
+  name    String
+  color   String
+  boardId String
+  board   Board   @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  cards   Card[]  // Implicit many-to-many relation with Card
+}
+
+model Member {
+  id      String  @id @default(cuid())
+  name    String
+  email   String  @unique
+  avatar  String?
+  boardId String?
+  board   Board?   @relation(fields: [boardId], references: [id])
+  cards   Card[]  // Implicit many-to-many relation with Card
+}
+
+model Checklist {
+  id      String          @id @default(cuid())
+  title   String
+  cardId  String
+  card    Card            @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  items   ChecklistItem[]
+}
+
+model ChecklistItem {
+  id          String    @id @default(cuid())
+  text        String
+  isCompleted Boolean   @default(false)
+  checklistId String
+  checklist   Checklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
 }

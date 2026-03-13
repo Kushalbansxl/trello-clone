@@ -3,7 +3,12 @@
 @import 'shadcn/tailwind.css';
 
 @custom-variant dark (&:is(.dark *));
-
+html, body, :root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* Taaki poora page scroll na ho, sirf board ho */
+}
 :root {
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);

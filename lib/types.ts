@@ -3,14 +3,16 @@
 export interface Member {
   id: string
   name: string
-  avatar: string
+  avatar: string | null     // <-- Added | null to match Prisma
   email: string
+  boardId?: string | null   // <-- Added to match Prisma
 }
 
 export interface Label {
   id: string
   name: string
   color: string
+  boardId?: string          // <-- Added to match Prisma
 }
 
 export interface ChecklistItem {
@@ -98,4 +100,21 @@ export interface BoardState {
   filterLabels: string[]
   filterMembers: string[]
   filterDueDate: 'all' | 'overdue' | 'dueToday' | 'dueThisWeek' | 'noDueDate'
+}
+// lib/types.ts
+
+export interface BoardState {
+  board: Board
+  lists: Record<string, List>
+  cards: Record<string, Card>
+  members: Member[]
+  labels: Label[]
+  currentUser: Member
+  searchQuery: string
+  filterLabels: string[]
+  filterMembers: string[]
+  filterDueDate: 'all' | 'overdue' | 'dueToday' | 'dueThisWeek' | 'noDueDate'
+  
+  // ADD THIS LINE:
+  availableBoards?: { id: string; title: string }[] 
 }

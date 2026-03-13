@@ -1,5 +1,5 @@
 'use client'
-
+import { updateListColor, createCard, deleteList } from '@/actions/board' // 🔥 deleteList add karo
 import { useState, useRef, useEffect } from 'react'
 import { useSortable, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -14,11 +14,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { useBoardContext } from '@/lib/board-store'
 import { KanbanCard } from './kanban-card'
 import type { List, Card } from '@/lib/types'
-import { updateListColor, createCard } from '@/actions/board'
+
 
 
 interface KanbanListProps {
@@ -40,7 +39,13 @@ export function KanbanList({ list, cards, onCardClick }: KanbanListProps) {
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: list.id })
 
-  const style = { transform: CSS.Transform.toString(transform), transition }
+  const style = { 
+    transform: CSS.Translate.toString(transform), 
+    transition,
+    // baaki agar color wagarah hai toh waise hi rehne dena
+    backgroundColor: list.color ? `${list.color}15` : undefined,
+    borderColor: list.color ? `${list.color}30` : undefined,
+  }
 
   useEffect(() => {
     if (isEditingTitle && titleInputRef.current) {
@@ -68,15 +73,18 @@ export function KanbanList({ list, cards, onCardClick }: KanbanListProps) {
       const listId = list.id
       const position = cards.length
 
-      // 1. Instantly update UI
       dispatch({ type: 'ADD_CARD', payload: { listId, title } })
-      
-      // 2. Permanently save to Database
       await createCard(listId, title, position)
-      
       setNewCardTitle('')
     }
     setIsAddingCard(false)
+  }
+
+  const handleDeleteList = async () => {
+    // 1. Instant UI se gayab karo
+    dispatch({ type: 'DELETE_LIST', payload: list.id })
+    // 2. Database se permanently uda do
+    await deleteList(list.id)
   }
 
   const handleColorChange = async (color: string | null) => {
@@ -94,9 +102,9 @@ export function KanbanList({ list, cards, onCardClick }: KanbanListProps) {
       }}
       className={`flex-shrink-0 w-[320px] rounded-2xl flex flex-col max-h-[calc(100vh-180px)] border ${
         !list.color ? 'bg-background/40 border-white/20 backdrop-blur-xl' : 'backdrop-blur-xl'
-      } ${isDragging ? 'opacity-60 shadow-2xl scale-[1.02] border-primary/50' : 'shadow-lg'}`}
+      } ${isDragging ? 'opacity-60 shadow-2xl scale-[1.02] border-primary/50 z-50' : 'shadow-lg'}`}
     >
-      <div className="p-4 flex items-center justify-between cursor-grab active:cursor-grabbing" {...attributes} {...listeners}>
+      <div className="p-4 flex items-center justify-between cursor-grab active:cursor-grabbing shrink-0" {...attributes} {...listeners}>
         <div className="flex items-center gap-2">
            {list.color && <Circle className="h-3 w-3 fill-current" style={{ color: list.color }} />}
            {isEditingTitle ? (
@@ -127,13 +135,16 @@ export function KanbanList({ list, cards, onCardClick }: KanbanListProps) {
               <DropdownMenuItem onClick={() => setIsAddingCard(true)} className="py-2 cursor-pointer font-medium">Add card</DropdownMenuItem>
               <DropdownMenuItem onClick={() => setIsEditingTitle(true)} className="py-2 cursor-pointer font-medium">Edit list title</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => dispatch({ type: 'DELETE_LIST', payload: list.id })} className="text-destructive py-2 cursor-pointer font-medium">Delete list</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleDeleteList} className="text-destructive py-2 cursor-pointer font-medium">
+               Delete list
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
 
-      <ScrollArea className="flex-1 px-3">
+      {/* 🔥 THE FIX: min-h-0 and native overflow-y-auto 🔥 */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 px-3 custom-scrollbar">
         <SortableContext items={cards.map((c) => c.id)} strategy={verticalListSortingStrategy}>
           <div className="space-y-3 pb-4">
             {cards.map((card) => (
@@ -141,9 +152,9 @@ export function KanbanList({ list, cards, onCardClick }: KanbanListProps) {
             ))}
           </div>
         </SortableContext>
-      </ScrollArea>
+      </div>
 
-      <div className="p-3 pt-0">
+      <div className="p-3 pt-2 shrink-0 border-t border-border/10">
         {isAddingCard ? (
           <div className="bg-background/80 rounded-xl p-3 shadow-sm border border-border space-y-3">
             <Textarea ref={cardInputRef} value={newCardTitle} onChange={(e) => setNewCardTitle(e.target.value)} placeholder="What needs to be done?" className="min-h-[70px] resize-none text-sm border-none shadow-none focus-visible:ring-0 px-1" onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAddCard() } if (e.key === 'Escape') { setNewCardTitle(''); setIsAddingCard(false) } }} />

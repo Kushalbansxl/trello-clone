@@ -40,6 +40,7 @@ export type CardMinAggregateOutputType = {
   description: string | null
   order: number | null
   coverImage: string | null
+  dueDate: Date | null
   listId: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -51,6 +52,7 @@ export type CardMaxAggregateOutputType = {
   description: string | null
   order: number | null
   coverImage: string | null
+  dueDate: Date | null
   listId: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -62,6 +64,7 @@ export type CardCountAggregateOutputType = {
   description: number
   order: number
   coverImage: number
+  dueDate: number
   listId: number
   createdAt: number
   updatedAt: number
@@ -83,6 +86,7 @@ export type CardMinAggregateInputType = {
   description?: true
   order?: true
   coverImage?: true
+  dueDate?: true
   listId?: true
   createdAt?: true
   updatedAt?: true
@@ -94,6 +98,7 @@ export type CardMaxAggregateInputType = {
   description?: true
   order?: true
   coverImage?: true
+  dueDate?: true
   listId?: true
   createdAt?: true
   updatedAt?: true
@@ -105,6 +110,7 @@ export type CardCountAggregateInputType = {
   description?: true
   order?: true
   coverImage?: true
+  dueDate?: true
   listId?: true
   createdAt?: true
   updatedAt?: true
@@ -203,6 +209,7 @@ export type CardGroupByOutputType = {
   description: string | null
   order: number
   coverImage: string | null
+  dueDate: Date | null
   listId: string
   createdAt: Date
   updatedAt: Date
@@ -237,10 +244,14 @@ export type CardWhereInput = {
   description?: Prisma.StringNullableFilter<"Card"> | string | null
   order?: Prisma.IntFilter<"Card"> | number
   coverImage?: Prisma.StringNullableFilter<"Card"> | string | null
+  dueDate?: Prisma.DateTimeNullableFilter<"Card"> | Date | string | null
   listId?: Prisma.StringFilter<"Card"> | string
   createdAt?: Prisma.DateTimeFilter<"Card"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Card"> | Date | string
   list?: Prisma.XOR<Prisma.ListScalarRelationFilter, Prisma.ListWhereInput>
+  labels?: Prisma.LabelListRelationFilter
+  members?: Prisma.MemberListRelationFilter
+  checklists?: Prisma.ChecklistListRelationFilter
 }
 
 export type CardOrderByWithRelationInput = {
@@ -249,10 +260,14 @@ export type CardOrderByWithRelationInput = {
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   order?: Prisma.SortOrder
   coverImage?: Prisma.SortOrderInput | Prisma.SortOrder
+  dueDate?: Prisma.SortOrderInput | Prisma.SortOrder
   listId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   list?: Prisma.ListOrderByWithRelationInput
+  labels?: Prisma.LabelOrderByRelationAggregateInput
+  members?: Prisma.MemberOrderByRelationAggregateInput
+  checklists?: Prisma.ChecklistOrderByRelationAggregateInput
 }
 
 export type CardWhereUniqueInput = Prisma.AtLeast<{
@@ -264,10 +279,14 @@ export type CardWhereUniqueInput = Prisma.AtLeast<{
   description?: Prisma.StringNullableFilter<"Card"> | string | null
   order?: Prisma.IntFilter<"Card"> | number
   coverImage?: Prisma.StringNullableFilter<"Card"> | string | null
+  dueDate?: Prisma.DateTimeNullableFilter<"Card"> | Date | string | null
   listId?: Prisma.StringFilter<"Card"> | string
   createdAt?: Prisma.DateTimeFilter<"Card"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Card"> | Date | string
   list?: Prisma.XOR<Prisma.ListScalarRelationFilter, Prisma.ListWhereInput>
+  labels?: Prisma.LabelListRelationFilter
+  members?: Prisma.MemberListRelationFilter
+  checklists?: Prisma.ChecklistListRelationFilter
 }, "id">
 
 export type CardOrderByWithAggregationInput = {
@@ -276,6 +295,7 @@ export type CardOrderByWithAggregationInput = {
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   order?: Prisma.SortOrder
   coverImage?: Prisma.SortOrderInput | Prisma.SortOrder
+  dueDate?: Prisma.SortOrderInput | Prisma.SortOrder
   listId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -295,6 +315,7 @@ export type CardScalarWhereWithAggregatesInput = {
   description?: Prisma.StringNullableWithAggregatesFilter<"Card"> | string | null
   order?: Prisma.IntWithAggregatesFilter<"Card"> | number
   coverImage?: Prisma.StringNullableWithAggregatesFilter<"Card"> | string | null
+  dueDate?: Prisma.DateTimeNullableWithAggregatesFilter<"Card"> | Date | string | null
   listId?: Prisma.StringWithAggregatesFilter<"Card"> | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Card"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Card"> | Date | string
@@ -306,9 +327,13 @@ export type CardCreateInput = {
   description?: string | null
   order: number
   coverImage?: string | null
+  dueDate?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   list: Prisma.ListCreateNestedOneWithoutCardsInput
+  labels?: Prisma.LabelCreateNestedManyWithoutCardsInput
+  members?: Prisma.MemberCreateNestedManyWithoutCardsInput
+  checklists?: Prisma.ChecklistCreateNestedManyWithoutCardInput
 }
 
 export type CardUncheckedCreateInput = {
@@ -317,9 +342,13 @@ export type CardUncheckedCreateInput = {
   description?: string | null
   order: number
   coverImage?: string | null
+  dueDate?: Date | string | null
   listId: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  labels?: Prisma.LabelUncheckedCreateNestedManyWithoutCardsInput
+  members?: Prisma.MemberUncheckedCreateNestedManyWithoutCardsInput
+  checklists?: Prisma.ChecklistUncheckedCreateNestedManyWithoutCardInput
 }
 
 export type CardUpdateInput = {
@@ -328,9 +357,13 @@ export type CardUpdateInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   coverImage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   list?: Prisma.ListUpdateOneRequiredWithoutCardsNestedInput
+  labels?: Prisma.LabelUpdateManyWithoutCardsNestedInput
+  members?: Prisma.MemberUpdateManyWithoutCardsNestedInput
+  checklists?: Prisma.ChecklistUpdateManyWithoutCardNestedInput
 }
 
 export type CardUncheckedUpdateInput = {
@@ -339,9 +372,13 @@ export type CardUncheckedUpdateInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   coverImage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   listId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  labels?: Prisma.LabelUncheckedUpdateManyWithoutCardsNestedInput
+  members?: Prisma.MemberUncheckedUpdateManyWithoutCardsNestedInput
+  checklists?: Prisma.ChecklistUncheckedUpdateManyWithoutCardNestedInput
 }
 
 export type CardCreateManyInput = {
@@ -350,6 +387,7 @@ export type CardCreateManyInput = {
   description?: string | null
   order: number
   coverImage?: string | null
+  dueDate?: Date | string | null
   listId: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -361,6 +399,7 @@ export type CardUpdateManyMutationInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   coverImage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -371,6 +410,7 @@ export type CardUncheckedUpdateManyInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   coverImage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   listId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -392,6 +432,7 @@ export type CardCountOrderByAggregateInput = {
   description?: Prisma.SortOrder
   order?: Prisma.SortOrder
   coverImage?: Prisma.SortOrder
+  dueDate?: Prisma.SortOrder
   listId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -407,6 +448,7 @@ export type CardMaxOrderByAggregateInput = {
   description?: Prisma.SortOrder
   order?: Prisma.SortOrder
   coverImage?: Prisma.SortOrder
+  dueDate?: Prisma.SortOrder
   listId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -418,6 +460,7 @@ export type CardMinOrderByAggregateInput = {
   description?: Prisma.SortOrder
   order?: Prisma.SortOrder
   coverImage?: Prisma.SortOrder
+  dueDate?: Prisma.SortOrder
   listId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -425,6 +468,11 @@ export type CardMinOrderByAggregateInput = {
 
 export type CardSumOrderByAggregateInput = {
   order?: Prisma.SortOrder
+}
+
+export type CardScalarRelationFilter = {
+  is?: Prisma.CardWhereInput
+  isNot?: Prisma.CardWhereInput
 }
 
 export type CardCreateNestedManyWithoutListInput = {
@@ -469,14 +517,112 @@ export type CardUncheckedUpdateManyWithoutListNestedInput = {
   deleteMany?: Prisma.CardScalarWhereInput | Prisma.CardScalarWhereInput[]
 }
 
+export type NullableDateTimeFieldUpdateOperationsInput = {
+  set?: Date | string | null
+}
+
+export type CardCreateNestedManyWithoutLabelsInput = {
+  create?: Prisma.XOR<Prisma.CardCreateWithoutLabelsInput, Prisma.CardUncheckedCreateWithoutLabelsInput> | Prisma.CardCreateWithoutLabelsInput[] | Prisma.CardUncheckedCreateWithoutLabelsInput[]
+  connectOrCreate?: Prisma.CardCreateOrConnectWithoutLabelsInput | Prisma.CardCreateOrConnectWithoutLabelsInput[]
+  connect?: Prisma.CardWhereUniqueInput | Prisma.CardWhereUniqueInput[]
+}
+
+export type CardUncheckedCreateNestedManyWithoutLabelsInput = {
+  create?: Prisma.XOR<Prisma.CardCreateWithoutLabelsInput, Prisma.CardUncheckedCreateWithoutLabelsInput> | Prisma.CardCreateWithoutLabelsInput[] | Prisma.CardUncheckedCreateWithoutLabelsInput[]
+  connectOrCreate?: Prisma.CardCreateOrConnectWithoutLabelsInput | Prisma.CardCreateOrConnectWithoutLabelsInput[]
+  connect?: Prisma.CardWhereUniqueInput | Prisma.CardWhereUniqueInput[]
+}
+
+export type CardUpdateManyWithoutLabelsNestedInput = {
+  create?: Prisma.XOR<Prisma.CardCreateWithoutLabelsInput, Prisma.CardUncheckedCreateWithoutLabelsInput> | Prisma.CardCreateWithoutLabelsInput[] | Prisma.CardUncheckedCreateWithoutLabelsInput[]
+  connectOrCreate?: Prisma.CardCreateOrConnectWithoutLabelsInput | Prisma.CardCreateOrConnectWithoutLabelsInput[]
+  upsert?: Prisma.CardUpsertWithWhereUniqueWithoutLabelsInput | Prisma.CardUpsertWithWhereUniqueWithoutLabelsInput[]
+  set?: Prisma.CardWhereUniqueInput | Prisma.CardWhereUniqueInput[]
+  disconnect?: Prisma.CardWhereUniqueInput | Prisma.CardWhereUniqueInput[]
+  delete?: Prisma.CardWhereUniqueInput | Prisma.CardWhereUniqueInput[]
+  connect?: Prisma.CardWhereUniqueInput | Prisma.CardWhereUniqueInput[]
+  update?: Prisma.CardUpdateWithWhereUniqueWithoutLabelsInput | Prisma.CardUpdateWithWhereUniqueWithoutLabelsInput[]
+  updateMany?: Prisma.CardUpdateManyWithWhereWithoutLabelsInput | Prisma.CardUpdateManyWithWhereWithoutLabelsInput[]
+  deleteMany?: Prisma.CardScalarWhereInput | Prisma.CardScalarWhereInput[]
+}
+
+export type CardUncheckedUpdateManyWithoutLabelsNestedInput = {
+  create?: Prisma.XOR<Prisma.CardCreateWithoutLabelsInput, Prisma.CardUncheckedCreateWithoutLabelsInput> | Prisma.CardCreateWithoutLabelsInput[] | Prisma.CardUncheckedCreateWithoutLabelsInput[]
+  connectOrCreate?: Prisma.CardCreateOrConnectWithoutLabelsInput | Prisma.CardCreateOrConnectWithoutLabelsInput[]
+  upsert?: Prisma.CardUpsertWithWhereUniqueWithoutLabelsInput | Prisma.CardUpsertWithWhereUniqueWithoutLabelsInput[]
+  set?: Prisma.CardWhereUniqueInput | Prisma.CardWhereUniqueInput[]
+  disconnect?: Prisma.CardWhereUniqueInput | Prisma.CardWhereUniqueInput[]
+  delete?: Prisma.CardWhereUniqueInput | Prisma.CardWhereUniqueInput[]
+  connect?: Prisma.CardWhereUniqueInput | Prisma.CardWhereUniqueInput[]
+  update?: Prisma.CardUpdateWithWhereUniqueWithoutLabelsInput | Prisma.CardUpdateWithWhereUniqueWithoutLabelsInput[]
+  updateMany?: Prisma.CardUpdateManyWithWhereWithoutLabelsInput | Prisma.CardUpdateManyWithWhereWithoutLabelsInput[]
+  deleteMany?: Prisma.CardScalarWhereInput | Prisma.CardScalarWhereInput[]
+}
+
+export type CardCreateNestedManyWithoutMembersInput = {
+  create?: Prisma.XOR<Prisma.CardCreateWithoutMembersInput, Prisma.CardUncheckedCreateWithoutMembersInput> | Prisma.CardCreateWithoutMembersInput[] | Prisma.CardUncheckedCreateWithoutMembersInput[]
+  connectOrCreate?: Prisma.CardCreateOrConnectWithoutMembersInput | Prisma.CardCreateOrConnectWithoutMembersInput[]
+  connect?: Prisma.CardWhereUniqueInput | Prisma.CardWhereUniqueInput[]
+}
+
+export type CardUncheckedCreateNestedManyWithoutMembersInput = {
+  create?: Prisma.XOR<Prisma.CardCreateWithoutMembersInput, Prisma.CardUncheckedCreateWithoutMembersInput> | Prisma.CardCreateWithoutMembersInput[] | Prisma.CardUncheckedCreateWithoutMembersInput[]
+  connectOrCreate?: Prisma.CardCreateOrConnectWithoutMembersInput | Prisma.CardCreateOrConnectWithoutMembersInput[]
+  connect?: Prisma.CardWhereUniqueInput | Prisma.CardWhereUniqueInput[]
+}
+
+export type CardUpdateManyWithoutMembersNestedInput = {
+  create?: Prisma.XOR<Prisma.CardCreateWithoutMembersInput, Prisma.CardUncheckedCreateWithoutMembersInput> | Prisma.CardCreateWithoutMembersInput[] | Prisma.CardUncheckedCreateWithoutMembersInput[]
+  connectOrCreate?: Prisma.CardCreateOrConnectWithoutMembersInput | Prisma.CardCreateOrConnectWithoutMembersInput[]
+  upsert?: Prisma.CardUpsertWithWhereUniqueWithoutMembersInput | Prisma.CardUpsertWithWhereUniqueWithoutMembersInput[]
+  set?: Prisma.CardWhereUniqueInput | Prisma.CardWhereUniqueInput[]
+  disconnect?: Prisma.CardWhereUniqueInput | Prisma.CardWhereUniqueInput[]
+  delete?: Prisma.CardWhereUniqueInput | Prisma.CardWhereUniqueInput[]
+  connect?: Prisma.CardWhereUniqueInput | Prisma.CardWhereUniqueInput[]
+  update?: Prisma.CardUpdateWithWhereUniqueWithoutMembersInput | Prisma.CardUpdateWithWhereUniqueWithoutMembersInput[]
+  updateMany?: Prisma.CardUpdateManyWithWhereWithoutMembersInput | Prisma.CardUpdateManyWithWhereWithoutMembersInput[]
+  deleteMany?: Prisma.CardScalarWhereInput | Prisma.CardScalarWhereInput[]
+}
+
+export type CardUncheckedUpdateManyWithoutMembersNestedInput = {
+  create?: Prisma.XOR<Prisma.CardCreateWithoutMembersInput, Prisma.CardUncheckedCreateWithoutMembersInput> | Prisma.CardCreateWithoutMembersInput[] | Prisma.CardUncheckedCreateWithoutMembersInput[]
+  connectOrCreate?: Prisma.CardCreateOrConnectWithoutMembersInput | Prisma.CardCreateOrConnectWithoutMembersInput[]
+  upsert?: Prisma.CardUpsertWithWhereUniqueWithoutMembersInput | Prisma.CardUpsertWithWhereUniqueWithoutMembersInput[]
+  set?: Prisma.CardWhereUniqueInput | Prisma.CardWhereUniqueInput[]
+  disconnect?: Prisma.CardWhereUniqueInput | Prisma.CardWhereUniqueInput[]
+  delete?: Prisma.CardWhereUniqueInput | Prisma.CardWhereUniqueInput[]
+  connect?: Prisma.CardWhereUniqueInput | Prisma.CardWhereUniqueInput[]
+  update?: Prisma.CardUpdateWithWhereUniqueWithoutMembersInput | Prisma.CardUpdateWithWhereUniqueWithoutMembersInput[]
+  updateMany?: Prisma.CardUpdateManyWithWhereWithoutMembersInput | Prisma.CardUpdateManyWithWhereWithoutMembersInput[]
+  deleteMany?: Prisma.CardScalarWhereInput | Prisma.CardScalarWhereInput[]
+}
+
+export type CardCreateNestedOneWithoutChecklistsInput = {
+  create?: Prisma.XOR<Prisma.CardCreateWithoutChecklistsInput, Prisma.CardUncheckedCreateWithoutChecklistsInput>
+  connectOrCreate?: Prisma.CardCreateOrConnectWithoutChecklistsInput
+  connect?: Prisma.CardWhereUniqueInput
+}
+
+export type CardUpdateOneRequiredWithoutChecklistsNestedInput = {
+  create?: Prisma.XOR<Prisma.CardCreateWithoutChecklistsInput, Prisma.CardUncheckedCreateWithoutChecklistsInput>
+  connectOrCreate?: Prisma.CardCreateOrConnectWithoutChecklistsInput
+  upsert?: Prisma.CardUpsertWithoutChecklistsInput
+  connect?: Prisma.CardWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.CardUpdateToOneWithWhereWithoutChecklistsInput, Prisma.CardUpdateWithoutChecklistsInput>, Prisma.CardUncheckedUpdateWithoutChecklistsInput>
+}
+
 export type CardCreateWithoutListInput = {
   id?: string
   title: string
   description?: string | null
   order: number
   coverImage?: string | null
+  dueDate?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  labels?: Prisma.LabelCreateNestedManyWithoutCardsInput
+  members?: Prisma.MemberCreateNestedManyWithoutCardsInput
+  checklists?: Prisma.ChecklistCreateNestedManyWithoutCardInput
 }
 
 export type CardUncheckedCreateWithoutListInput = {
@@ -485,8 +631,12 @@ export type CardUncheckedCreateWithoutListInput = {
   description?: string | null
   order: number
   coverImage?: string | null
+  dueDate?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  labels?: Prisma.LabelUncheckedCreateNestedManyWithoutCardsInput
+  members?: Prisma.MemberUncheckedCreateNestedManyWithoutCardsInput
+  checklists?: Prisma.ChecklistUncheckedCreateNestedManyWithoutCardInput
 }
 
 export type CardCreateOrConnectWithoutListInput = {
@@ -524,9 +674,180 @@ export type CardScalarWhereInput = {
   description?: Prisma.StringNullableFilter<"Card"> | string | null
   order?: Prisma.IntFilter<"Card"> | number
   coverImage?: Prisma.StringNullableFilter<"Card"> | string | null
+  dueDate?: Prisma.DateTimeNullableFilter<"Card"> | Date | string | null
   listId?: Prisma.StringFilter<"Card"> | string
   createdAt?: Prisma.DateTimeFilter<"Card"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Card"> | Date | string
+}
+
+export type CardCreateWithoutLabelsInput = {
+  id?: string
+  title: string
+  description?: string | null
+  order: number
+  coverImage?: string | null
+  dueDate?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  list: Prisma.ListCreateNestedOneWithoutCardsInput
+  members?: Prisma.MemberCreateNestedManyWithoutCardsInput
+  checklists?: Prisma.ChecklistCreateNestedManyWithoutCardInput
+}
+
+export type CardUncheckedCreateWithoutLabelsInput = {
+  id?: string
+  title: string
+  description?: string | null
+  order: number
+  coverImage?: string | null
+  dueDate?: Date | string | null
+  listId: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  members?: Prisma.MemberUncheckedCreateNestedManyWithoutCardsInput
+  checklists?: Prisma.ChecklistUncheckedCreateNestedManyWithoutCardInput
+}
+
+export type CardCreateOrConnectWithoutLabelsInput = {
+  where: Prisma.CardWhereUniqueInput
+  create: Prisma.XOR<Prisma.CardCreateWithoutLabelsInput, Prisma.CardUncheckedCreateWithoutLabelsInput>
+}
+
+export type CardUpsertWithWhereUniqueWithoutLabelsInput = {
+  where: Prisma.CardWhereUniqueInput
+  update: Prisma.XOR<Prisma.CardUpdateWithoutLabelsInput, Prisma.CardUncheckedUpdateWithoutLabelsInput>
+  create: Prisma.XOR<Prisma.CardCreateWithoutLabelsInput, Prisma.CardUncheckedCreateWithoutLabelsInput>
+}
+
+export type CardUpdateWithWhereUniqueWithoutLabelsInput = {
+  where: Prisma.CardWhereUniqueInput
+  data: Prisma.XOR<Prisma.CardUpdateWithoutLabelsInput, Prisma.CardUncheckedUpdateWithoutLabelsInput>
+}
+
+export type CardUpdateManyWithWhereWithoutLabelsInput = {
+  where: Prisma.CardScalarWhereInput
+  data: Prisma.XOR<Prisma.CardUpdateManyMutationInput, Prisma.CardUncheckedUpdateManyWithoutLabelsInput>
+}
+
+export type CardCreateWithoutMembersInput = {
+  id?: string
+  title: string
+  description?: string | null
+  order: number
+  coverImage?: string | null
+  dueDate?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  list: Prisma.ListCreateNestedOneWithoutCardsInput
+  labels?: Prisma.LabelCreateNestedManyWithoutCardsInput
+  checklists?: Prisma.ChecklistCreateNestedManyWithoutCardInput
+}
+
+export type CardUncheckedCreateWithoutMembersInput = {
+  id?: string
+  title: string
+  description?: string | null
+  order: number
+  coverImage?: string | null
+  dueDate?: Date | string | null
+  listId: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  labels?: Prisma.LabelUncheckedCreateNestedManyWithoutCardsInput
+  checklists?: Prisma.ChecklistUncheckedCreateNestedManyWithoutCardInput
+}
+
+export type CardCreateOrConnectWithoutMembersInput = {
+  where: Prisma.CardWhereUniqueInput
+  create: Prisma.XOR<Prisma.CardCreateWithoutMembersInput, Prisma.CardUncheckedCreateWithoutMembersInput>
+}
+
+export type CardUpsertWithWhereUniqueWithoutMembersInput = {
+  where: Prisma.CardWhereUniqueInput
+  update: Prisma.XOR<Prisma.CardUpdateWithoutMembersInput, Prisma.CardUncheckedUpdateWithoutMembersInput>
+  create: Prisma.XOR<Prisma.CardCreateWithoutMembersInput, Prisma.CardUncheckedCreateWithoutMembersInput>
+}
+
+export type CardUpdateWithWhereUniqueWithoutMembersInput = {
+  where: Prisma.CardWhereUniqueInput
+  data: Prisma.XOR<Prisma.CardUpdateWithoutMembersInput, Prisma.CardUncheckedUpdateWithoutMembersInput>
+}
+
+export type CardUpdateManyWithWhereWithoutMembersInput = {
+  where: Prisma.CardScalarWhereInput
+  data: Prisma.XOR<Prisma.CardUpdateManyMutationInput, Prisma.CardUncheckedUpdateManyWithoutMembersInput>
+}
+
+export type CardCreateWithoutChecklistsInput = {
+  id?: string
+  title: string
+  description?: string | null
+  order: number
+  coverImage?: string | null
+  dueDate?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  list: Prisma.ListCreateNestedOneWithoutCardsInput
+  labels?: Prisma.LabelCreateNestedManyWithoutCardsInput
+  members?: Prisma.MemberCreateNestedManyWithoutCardsInput
+}
+
+export type CardUncheckedCreateWithoutChecklistsInput = {
+  id?: string
+  title: string
+  description?: string | null
+  order: number
+  coverImage?: string | null
+  dueDate?: Date | string | null
+  listId: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  labels?: Prisma.LabelUncheckedCreateNestedManyWithoutCardsInput
+  members?: Prisma.MemberUncheckedCreateNestedManyWithoutCardsInput
+}
+
+export type CardCreateOrConnectWithoutChecklistsInput = {
+  where: Prisma.CardWhereUniqueInput
+  create: Prisma.XOR<Prisma.CardCreateWithoutChecklistsInput, Prisma.CardUncheckedCreateWithoutChecklistsInput>
+}
+
+export type CardUpsertWithoutChecklistsInput = {
+  update: Prisma.XOR<Prisma.CardUpdateWithoutChecklistsInput, Prisma.CardUncheckedUpdateWithoutChecklistsInput>
+  create: Prisma.XOR<Prisma.CardCreateWithoutChecklistsInput, Prisma.CardUncheckedCreateWithoutChecklistsInput>
+  where?: Prisma.CardWhereInput
+}
+
+export type CardUpdateToOneWithWhereWithoutChecklistsInput = {
+  where?: Prisma.CardWhereInput
+  data: Prisma.XOR<Prisma.CardUpdateWithoutChecklistsInput, Prisma.CardUncheckedUpdateWithoutChecklistsInput>
+}
+
+export type CardUpdateWithoutChecklistsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  coverImage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  list?: Prisma.ListUpdateOneRequiredWithoutCardsNestedInput
+  labels?: Prisma.LabelUpdateManyWithoutCardsNestedInput
+  members?: Prisma.MemberUpdateManyWithoutCardsNestedInput
+}
+
+export type CardUncheckedUpdateWithoutChecklistsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  coverImage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listId?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  labels?: Prisma.LabelUncheckedUpdateManyWithoutCardsNestedInput
+  members?: Prisma.MemberUncheckedUpdateManyWithoutCardsNestedInput
 }
 
 export type CardCreateManyListInput = {
@@ -535,6 +856,7 @@ export type CardCreateManyListInput = {
   description?: string | null
   order: number
   coverImage?: string | null
+  dueDate?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -545,8 +867,12 @@ export type CardUpdateWithoutListInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   coverImage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  labels?: Prisma.LabelUpdateManyWithoutCardsNestedInput
+  members?: Prisma.MemberUpdateManyWithoutCardsNestedInput
+  checklists?: Prisma.ChecklistUpdateManyWithoutCardNestedInput
 }
 
 export type CardUncheckedUpdateWithoutListInput = {
@@ -555,8 +881,12 @@ export type CardUncheckedUpdateWithoutListInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   coverImage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  labels?: Prisma.LabelUncheckedUpdateManyWithoutCardsNestedInput
+  members?: Prisma.MemberUncheckedUpdateManyWithoutCardsNestedInput
+  checklists?: Prisma.ChecklistUncheckedUpdateManyWithoutCardNestedInput
 }
 
 export type CardUncheckedUpdateManyWithoutListInput = {
@@ -565,10 +895,138 @@ export type CardUncheckedUpdateManyWithoutListInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   coverImage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
+export type CardUpdateWithoutLabelsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  coverImage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  list?: Prisma.ListUpdateOneRequiredWithoutCardsNestedInput
+  members?: Prisma.MemberUpdateManyWithoutCardsNestedInput
+  checklists?: Prisma.ChecklistUpdateManyWithoutCardNestedInput
+}
+
+export type CardUncheckedUpdateWithoutLabelsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  coverImage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listId?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  members?: Prisma.MemberUncheckedUpdateManyWithoutCardsNestedInput
+  checklists?: Prisma.ChecklistUncheckedUpdateManyWithoutCardNestedInput
+}
+
+export type CardUncheckedUpdateManyWithoutLabelsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  coverImage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listId?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type CardUpdateWithoutMembersInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  coverImage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  list?: Prisma.ListUpdateOneRequiredWithoutCardsNestedInput
+  labels?: Prisma.LabelUpdateManyWithoutCardsNestedInput
+  checklists?: Prisma.ChecklistUpdateManyWithoutCardNestedInput
+}
+
+export type CardUncheckedUpdateWithoutMembersInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  coverImage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listId?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  labels?: Prisma.LabelUncheckedUpdateManyWithoutCardsNestedInput
+  checklists?: Prisma.ChecklistUncheckedUpdateManyWithoutCardNestedInput
+}
+
+export type CardUncheckedUpdateManyWithoutMembersInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  coverImage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  listId?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+
+/**
+ * Count Type CardCountOutputType
+ */
+
+export type CardCountOutputType = {
+  labels: number
+  members: number
+  checklists: number
+}
+
+export type CardCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  labels?: boolean | CardCountOutputTypeCountLabelsArgs
+  members?: boolean | CardCountOutputTypeCountMembersArgs
+  checklists?: boolean | CardCountOutputTypeCountChecklistsArgs
+}
+
+/**
+ * CardCountOutputType without action
+ */
+export type CardCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CardCountOutputType
+   */
+  select?: Prisma.CardCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * CardCountOutputType without action
+ */
+export type CardCountOutputTypeCountLabelsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.LabelWhereInput
+}
+
+/**
+ * CardCountOutputType without action
+ */
+export type CardCountOutputTypeCountMembersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.MemberWhereInput
+}
+
+/**
+ * CardCountOutputType without action
+ */
+export type CardCountOutputTypeCountChecklistsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ChecklistWhereInput
+}
 
 
 export type CardSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -577,10 +1035,15 @@ export type CardSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   description?: boolean
   order?: boolean
   coverImage?: boolean
+  dueDate?: boolean
   listId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   list?: boolean | Prisma.ListDefaultArgs<ExtArgs>
+  labels?: boolean | Prisma.Card$labelsArgs<ExtArgs>
+  members?: boolean | Prisma.Card$membersArgs<ExtArgs>
+  checklists?: boolean | Prisma.Card$checklistsArgs<ExtArgs>
+  _count?: boolean | Prisma.CardCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["card"]>
 
 export type CardSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -589,6 +1052,7 @@ export type CardSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   description?: boolean
   order?: boolean
   coverImage?: boolean
+  dueDate?: boolean
   listId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -601,6 +1065,7 @@ export type CardSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   description?: boolean
   order?: boolean
   coverImage?: boolean
+  dueDate?: boolean
   listId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -613,14 +1078,19 @@ export type CardSelectScalar = {
   description?: boolean
   order?: boolean
   coverImage?: boolean
+  dueDate?: boolean
   listId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type CardOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "description" | "order" | "coverImage" | "listId" | "createdAt" | "updatedAt", ExtArgs["result"]["card"]>
+export type CardOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "description" | "order" | "coverImage" | "dueDate" | "listId" | "createdAt" | "updatedAt", ExtArgs["result"]["card"]>
 export type CardInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   list?: boolean | Prisma.ListDefaultArgs<ExtArgs>
+  labels?: boolean | Prisma.Card$labelsArgs<ExtArgs>
+  members?: boolean | Prisma.Card$membersArgs<ExtArgs>
+  checklists?: boolean | Prisma.Card$checklistsArgs<ExtArgs>
+  _count?: boolean | Prisma.CardCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type CardIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   list?: boolean | Prisma.ListDefaultArgs<ExtArgs>
@@ -633,6 +1103,9 @@ export type $CardPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   name: "Card"
   objects: {
     list: Prisma.$ListPayload<ExtArgs>
+    labels: Prisma.$LabelPayload<ExtArgs>[]
+    members: Prisma.$MemberPayload<ExtArgs>[]
+    checklists: Prisma.$ChecklistPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -640,6 +1113,7 @@ export type $CardPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     description: string | null
     order: number
     coverImage: string | null
+    dueDate: Date | null
     listId: string
     createdAt: Date
     updatedAt: Date
@@ -1038,6 +1512,9 @@ readonly fields: CardFieldRefs;
 export interface Prisma__CardClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   list<T extends Prisma.ListDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ListDefaultArgs<ExtArgs>>): Prisma.Prisma__ListClient<runtime.Types.Result.GetResult<Prisma.$ListPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  labels<T extends Prisma.Card$labelsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Card$labelsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$LabelPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  members<T extends Prisma.Card$membersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Card$membersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MemberPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  checklists<T extends Prisma.Card$checklistsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Card$checklistsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ChecklistPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1072,6 +1549,7 @@ export interface CardFieldRefs {
   readonly description: Prisma.FieldRef<"Card", 'String'>
   readonly order: Prisma.FieldRef<"Card", 'Int'>
   readonly coverImage: Prisma.FieldRef<"Card", 'String'>
+  readonly dueDate: Prisma.FieldRef<"Card", 'DateTime'>
   readonly listId: Prisma.FieldRef<"Card", 'String'>
   readonly createdAt: Prisma.FieldRef<"Card", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Card", 'DateTime'>
@@ -1473,6 +1951,78 @@ export type CardDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Internal
    * Limit how many Cards to delete.
    */
   limit?: number
+}
+
+/**
+ * Card.labels
+ */
+export type Card$labelsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Label
+   */
+  select?: Prisma.LabelSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Label
+   */
+  omit?: Prisma.LabelOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.LabelInclude<ExtArgs> | null
+  where?: Prisma.LabelWhereInput
+  orderBy?: Prisma.LabelOrderByWithRelationInput | Prisma.LabelOrderByWithRelationInput[]
+  cursor?: Prisma.LabelWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.LabelScalarFieldEnum | Prisma.LabelScalarFieldEnum[]
+}
+
+/**
+ * Card.members
+ */
+export type Card$membersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Member
+   */
+  select?: Prisma.MemberSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Member
+   */
+  omit?: Prisma.MemberOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.MemberInclude<ExtArgs> | null
+  where?: Prisma.MemberWhereInput
+  orderBy?: Prisma.MemberOrderByWithRelationInput | Prisma.MemberOrderByWithRelationInput[]
+  cursor?: Prisma.MemberWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.MemberScalarFieldEnum | Prisma.MemberScalarFieldEnum[]
+}
+
+/**
+ * Card.checklists
+ */
+export type Card$checklistsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Checklist
+   */
+  select?: Prisma.ChecklistSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Checklist
+   */
+  omit?: Prisma.ChecklistOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ChecklistInclude<ExtArgs> | null
+  where?: Prisma.ChecklistWhereInput
+  orderBy?: Prisma.ChecklistOrderByWithRelationInput | Prisma.ChecklistOrderByWithRelationInput[]
+  cursor?: Prisma.ChecklistWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ChecklistScalarFieldEnum | Prisma.ChecklistScalarFieldEnum[]
 }
 
 /**

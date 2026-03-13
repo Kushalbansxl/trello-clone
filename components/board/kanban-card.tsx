@@ -31,7 +31,10 @@ export function KanbanCard({ card, onClick }: KanbanCardProps) {
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id })
 
-  const style = { transform: CSS.Transform.toString(transform), transition }
+  const style = { 
+    transform: CSS.Translate.toString(transform), // Transform ki jagah Translate!
+    transition 
+  }
 
   const cardLabels = state.labels.filter((l) => card.labels.includes(l.id))
   const cardMembers = state.members.filter((m) => card.members.includes(m.id))

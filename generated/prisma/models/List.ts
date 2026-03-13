@@ -467,10 +467,6 @@ export type IntFieldUpdateOperationsInput = {
   divide?: number
 }
 
-export type NullableStringFieldUpdateOperationsInput = {
-  set?: string | null
-}
-
 export type ListCreateNestedOneWithoutCardsInput = {
   create?: Prisma.XOR<Prisma.ListCreateWithoutCardsInput, Prisma.ListUncheckedCreateWithoutCardsInput>
   connectOrCreate?: Prisma.ListCreateOrConnectWithoutCardsInput

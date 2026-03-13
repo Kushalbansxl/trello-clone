@@ -32,3 +32,23 @@ export type List = Prisma.ListModel
  * 
  */
 export type Card = Prisma.CardModel
+/**
+ * Model Label
+ * 
+ */
+export type Label = Prisma.LabelModel
+/**
+ * Model Member
+ * 
+ */
+export type Member = Prisma.MemberModel
+/**
+ * Model Checklist
+ * 
+ */
+export type Checklist = Prisma.ChecklistModel
+/**
+ * Model ChecklistItem
+ * 
+ */
+export type ChecklistItem = Prisma.ChecklistItemModel

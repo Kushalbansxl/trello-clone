@@ -1,757 +1,486 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import {
-  X,
-  CreditCard,
-  AlignLeft,
-  Tag,
-  Users,
-  Calendar,
-  CheckSquare,
-  MessageSquare,
-  Paperclip,
-  Archive,
-  Trash2,
-  Plus,
-  Image as ImageIcon,
-  Clock,
-  Activity,
+import { useState } from 'react'
+import { format } from 'date-fns'
+import { 
+  X, AlignLeft, CheckSquare, Clock, Tag, UserPlus, 
+  CreditCard, Layout, Plus, CalendarIcon, Check, Trash2, ChevronLeft, Image as ImageIcon 
 } from 'lucide-react'
-import { format, formatDistanceToNow } from 'date-fns'
+
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Calendar } from '@/components/ui/calendar'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Calendar as CalendarPicker } from '@/components/ui/calendar'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
+import { Progress } from '@/components/ui/progress'
+
 import { useBoardContext } from '@/lib/board-store'
 import type { Card, Checklist } from '@/lib/types'
+import { 
+  toggleCardLabel, toggleCardMember, updateCardDueDate, 
+  addChecklist, addChecklistItem, toggleChecklistItem,
+  updateCardDescription, deleteChecklist, deleteCard,
+  addMemberByName, createLabel, updateCardCover
+} from '@/actions/board'
 
 interface CardDetailModalProps {
   card: Card
   onClose: () => void
 }
 
-export function CardDetailModal({ card, onClose }: CardDetailModalProps) {
+const LABEL_COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#64748b']
+
+export function CardDetailModal({ card: initialCard, onClose }: CardDetailModalProps) {
   const { state, dispatch } = useBoardContext()
-  const [editingTitle, setEditingTitle] = useState(false)
-  const [title, setTitle] = useState(card.title)
-  const [description, setDescription] = useState(card.description)
-  const [editingDescription, setEditingDescription] = useState(false)
-  const [newComment, setNewComment] = useState('')
+  const card = state.cards[initialCard.id] || initialCard
+  const parentList = state.lists[card.listId]
+
   const [newChecklistTitle, setNewChecklistTitle] = useState('')
-  const [addingChecklist, setAddingChecklist] = useState(false)
-  const [addingItemTo, setAddingItemTo] = useState<string | null>(null)
-  const [newItemText, setNewItemText] = useState('')
-  const [showActivity, setShowActivity] = useState(false)
-  const titleInputRef = useRef<HTMLInputElement>(null)
+  const [newItemTexts, setNewItemTexts] = useState<Record<string, string>>({})
+  const [isEditingDesc, setIsEditingDesc] = useState(false)
+  const [descInput, setDescInput] = useState(card.description || '')
+  const [coverUrlInput, setCoverUrlInput] = useState('')
 
-  const currentCard = state.cards[card.id] || card
+  // 🔥 MEMBERS STATE
+  const [newMemberName, setNewMemberName] = useState('')
+  const [isInviting, setIsInviting] = useState(false)
+  
+  // 🔥 LABELS STATE
+  const [isCreatingLabel, setIsCreatingLabel] = useState(false)
+  const [newLabelName, setNewLabelName] = useState('')
+  const [newLabelColor, setNewLabelColor] = useState(LABEL_COLORS[4])
+  const [isSavingLabel, setIsSavingLabel] = useState(false)
 
-  const cardLabels = state.labels.filter((l) => currentCard.labels.includes(l.id))
-  const cardMembers = state.members.filter((m) => currentCard.members.includes(m.id))
-  const currentList = state.lists[currentCard.listId]
+  // --- ACTIONS ---
 
-  useEffect(() => {
-    if (editingTitle && titleInputRef.current) {
-      titleInputRef.current.focus()
-      titleInputRef.current.select()
-    }
-  }, [editingTitle])
-
-  const handleSaveTitle = () => {
-    if (title.trim() && title !== currentCard.title) {
-      dispatch({ type: 'UPDATE_CARD', payload: { id: card.id, title: title.trim() } })
-    } else {
-      setTitle(currentCard.title)
-    }
-    setEditingTitle(false)
+  const handleApplyCover = async (value: string | null) => {
+    dispatch({ type: 'UPDATE_CARD_COVER', payload: { cardId: card.id, coverImage: value } })
+    await updateCardCover(card.id, value)
   }
 
-  const handleSaveDescription = () => {
-    dispatch({ type: 'UPDATE_CARD', payload: { id: card.id, description } })
-    setEditingDescription(false)
-  }
-
-  const handleToggleLabel = (labelId: string) => {
-    const newLabels = currentCard.labels.includes(labelId)
-      ? currentCard.labels.filter((id) => id !== labelId)
-      : [...currentCard.labels, labelId]
+  // 1. SELECT/UNSELECT LABEL
+  const handleToggleLabel = async (e: React.MouseEvent, labelId: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const hasLabel = card.labels.includes(labelId)
+    const newLabels = hasLabel ? card.labels.filter(id => id !== labelId) : [...card.labels, labelId]
+    
     dispatch({ type: 'UPDATE_CARD', payload: { id: card.id, labels: newLabels } })
+    await toggleCardLabel(card.id, labelId, hasLabel)
   }
 
-  const handleToggleMember = (memberId: string) => {
-    const newMembers = currentCard.members.includes(memberId)
-      ? currentCard.members.filter((id) => id !== memberId)
-      : [...currentCard.members, memberId]
+  // 2. CREATE NEW LABEL
+  const handleCreateLabel = async () => {
+    if (!newLabelName.trim()) return
+    setIsSavingLabel(true)
+    const res = await createLabel(state.board.id, newLabelName.trim(), newLabelColor)
+    
+    if (res.success && res.label) {
+      // Board mein label add karo
+      dispatch({ type: 'ADD_LABEL', payload: res.label })
+      // Turant is card ko assign kar do
+      const newLabels = [...card.labels, res.label.id]
+      dispatch({ type: 'UPDATE_CARD', payload: { id: card.id, labels: newLabels } })
+      await toggleCardLabel(card.id, res.label.id, false)
+      
+      setIsCreatingLabel(false)
+      setNewLabelName('')
+    }
+    setIsSavingLabel(false)
+  }
+
+  // 3. SELECT/UNSELECT MEMBER
+  const handleToggleMember = async (e: React.MouseEvent, memberId: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const hasMember = card.members.includes(memberId)
+    const newMembers = hasMember ? card.members.filter(id => id !== memberId) : [...card.members, memberId]
+    
     dispatch({ type: 'UPDATE_CARD', payload: { id: card.id, members: newMembers } })
+    await toggleCardMember(card.id, memberId, hasMember)
   }
 
-  const handleSetDueDate = (date: Date | undefined) => {
+  // 4. CREATE NEW MEMBER
+  const handleAddMember = async () => {
+    if (!newMemberName.trim()) return
+    setIsInviting(true)
+    const res = await addMemberByName(state.board.id, newMemberName.trim())
+    
+    if (res.success && res.member) {
+      dispatch({ type: 'ADD_MEMBER', payload: res.member })
+      const newMembers = [...card.members, res.member.id]
+      dispatch({ type: 'UPDATE_CARD', payload: { id: card.id, members: newMembers } })
+      await toggleCardMember(card.id, res.member.id, false)
+      
+      setNewMemberName('')
+    }
+    setIsInviting(false)
+  }
+
+  // ... (Baki saare existing actions Checklists aur Date ke yahan rahenge)
+  const handleDateSelect = async (date: Date | undefined) => {
     dispatch({ type: 'UPDATE_CARD', payload: { id: card.id, dueDate: date || null } })
+    await updateCardDueDate(card.id, date || null)
   }
-
-  const handleAddChecklist = () => {
-    if (newChecklistTitle.trim()) {
-      dispatch({
-        type: 'ADD_CHECKLIST',
-        payload: { cardId: card.id, title: newChecklistTitle.trim() },
-      })
-      setNewChecklistTitle('')
+  const handleSaveDescription = async () => {
+    const newDesc = descInput.trim() || null
+    dispatch({ type: 'UPDATE_CARD', payload: { id: card.id, description: newDesc } })
+    setIsEditingDesc(false)
+    await updateCardDescription(card.id, newDesc)
+  }
+  const handleAddChecklist = async () => {
+    if (!newChecklistTitle.trim()) return
+    const res = await addChecklist(card.id, newChecklistTitle.trim())
+    if (res.success && res.checklist) {
+      dispatch({ type: 'UPDATE_CARD', payload: { id: card.id, checklists: [...card.checklists, { ...res.checklist, items: [] }] } })
     }
-    setAddingChecklist(false)
+    setNewChecklistTitle('')
   }
-
-  const handleAddChecklistItem = (checklistId: string) => {
-    if (newItemText.trim()) {
-      dispatch({
-        type: 'ADD_CHECKLIST_ITEM',
-        payload: { cardId: card.id, checklistId, text: newItemText.trim() },
-      })
-      setNewItemText('')
+  const handleDeleteChecklist = async (checklistId: string) => {
+    const updatedChecklists = card.checklists.filter(cl => cl.id !== checklistId)
+    dispatch({ type: 'UPDATE_CARD', payload: { id: card.id, checklists: updatedChecklists } })
+    await deleteChecklist(checklistId)
+  }
+  const handleAddChecklistItem = async (checklistId: string) => {
+    const text = newItemTexts[checklistId]?.trim()
+    if (!text) return
+    const res = await addChecklistItem(checklistId, text)
+    if (res.success && res.item) {
+      const updatedChecklists = card.checklists.map(cl => cl.id === checklistId ? { ...cl, items: [...cl.items, { id: res.item.id, text: res.item.text, completed: res.item.isCompleted }] } : cl)
+      dispatch({ type: 'UPDATE_CARD', payload: { id: card.id, checklists: updatedChecklists } })
     }
-    setAddingItemTo(null)
+    setNewItemTexts(prev => ({ ...prev, [checklistId]: '' }))
   }
-
-  const handleToggleChecklistItem = (checklistId: string, itemId: string, completed: boolean) => {
-    const checklist = currentCard.checklists.find((cl) => cl.id === checklistId)
-    const item = checklist?.items.find((i) => i.id === itemId)
-    if (item) {
-      dispatch({
-        type: 'UPDATE_CHECKLIST_ITEM',
-        payload: { cardId: card.id, checklistId, item: { ...item, completed } },
-      })
-    }
+  const handleToggleItem = async (checklistId: string, itemId: string, currentStatus: boolean) => {
+    const newStatus = !currentStatus
+    const updatedChecklists = card.checklists.map(cl => cl.id === checklistId ? { ...cl, items: cl.items.map(item => item.id === itemId ? { ...item, completed: newStatus, isCompleted: newStatus } : item) } : cl)
+    dispatch({ type: 'UPDATE_CARD', payload: { id: card.id, checklists: updatedChecklists } })
+    await toggleChecklistItem(itemId, newStatus)
   }
-
-  const handleDeleteChecklist = (checklistId: string) => {
-    dispatch({ type: 'DELETE_CHECKLIST', payload: { cardId: card.id, checklistId } })
-  }
-
-  const handleAddComment = () => {
-    if (newComment.trim()) {
-      dispatch({ type: 'ADD_COMMENT', payload: { cardId: card.id, text: newComment.trim() } })
-      setNewComment('')
-    }
-  }
-
-  const handleArchive = () => {
-    dispatch({ type: 'ARCHIVE_CARD', payload: card.id })
-    onClose()
-  }
-
-  const handleDelete = () => {
+  const handleDeleteCard = async () => {
     dispatch({ type: 'DELETE_CARD', payload: card.id })
     onClose()
-  }
-
-  const getChecklistProgress = (checklist: Checklist) => {
-    if (checklist.items.length === 0) return 0
-    return (checklist.items.filter((i) => i.completed).length / checklist.items.length) * 100
+    await deleteCard(card.id)
   }
 
   return (
-    <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] p-0 gap-0 overflow-hidden">
-        {currentCard.coverImage && (
-          <div className="h-32 relative">
-            <img
-              src={currentCard.coverImage}
-              alt=""
-              className="w-full h-full object-cover"
-              crossOrigin="anonymous"
-            />
-            <Button
-              variant="secondary"
-              size="sm"
-              className="absolute bottom-2 right-2 opacity-80"
-              onClick={() => dispatch({ type: 'UPDATE_CARD', payload: { id: card.id, coverImage: null } })}
-            >
-              Remove cover
-            </Button>
+    <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[768px] p-0 bg-background/95 backdrop-blur-xl border-border/50 shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+        <DialogTitle className="sr-only">{card.title} Details</DialogTitle>
+
+        {card.coverImage && (
+          <div className="w-full h-32 relative">
+            {card.coverImage.startsWith('#') ? (
+               <div className="w-full h-full" style={{ backgroundColor: card.coverImage }} />
+            ) : (
+               <img src={card.coverImage} alt="Cover" className="w-full h-full object-cover" crossOrigin="anonymous" />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent opacity-50" />
           </div>
         )}
 
-        <ScrollArea className="max-h-[calc(90vh-8rem)]">
-          <div className="p-6">
-            <DialogHeader className="space-y-0 mb-6">
-              <div className="flex items-start gap-3">
-                <CreditCard className="h-5 w-5 mt-1 text-muted-foreground flex-shrink-0" />
-                <div className="flex-1">
-                  {editingTitle ? (
-                    <Input
-                      ref={titleInputRef}
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      onBlur={handleSaveTitle}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleSaveTitle()
-                        if (e.key === 'Escape') {
-                          setTitle(currentCard.title)
-                          setEditingTitle(false)
-                        }
-                      }}
-                      className="text-xl font-semibold -ml-3 -mt-1"
-                    />
-                  ) : (
-                    <DialogTitle
-                      className="text-xl font-semibold cursor-pointer hover:bg-muted/50 px-2 py-1 -ml-2 rounded"
-                      onClick={() => setEditingTitle(true)}
-                    >
-                      {currentCard.title}
-                    </DialogTitle>
-                  )}
-                  <p className="text-sm text-muted-foreground mt-1">
-                    in list <span className="font-medium underline">{currentList?.title}</span>
-                  </p>
-                </div>
-              </div>
-            </DialogHeader>
+        <div className="p-6 pt-5 max-h-[85vh] overflow-y-auto custom-scrollbar">
+          <div className="flex items-start gap-4 w-full">
+            <CreditCard className="w-6 h-6 mt-1 text-muted-foreground shrink-0" />
+            <div className="flex-1 space-y-1.5">
+              <h2 className="text-xl font-bold leading-tight">{card.title}</h2>
+              <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                in list <span className="underline decoration-primary underline-offset-2">{parentList?.title}</span>
+              </p>
+            </div>
+            <Button variant="ghost" size="icon" className="shrink-0 -mt-2 -mr-2" onClick={onClose}>
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-[1fr_200px] gap-6">
-              <div className="space-y-6">
-                {(cardLabels.length > 0 || cardMembers.length > 0 || currentCard.dueDate) && (
-                  <div className="flex flex-wrap gap-4">
-                    {cardMembers.length > 0 && (
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground mb-2">Members</p>
-                        <div className="flex -space-x-1">
-                          {cardMembers.map((member) => (
-                            <Avatar key={member.id} className="h-8 w-8 border-2 border-background">
-                              <AvatarImage src={member.avatar} />
-                              <AvatarFallback className="text-xs">
-                                {member.name.split(' ').map((n) => n[0]).join('')}
-                              </AvatarFallback>
-                            </Avatar>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {cardLabels.length > 0 && (
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground mb-2">Labels</p>
-                        <div className="flex flex-wrap gap-1">
-                          {cardLabels.map((label) => (
-                            <Badge
-                              key={label.id}
-                              style={{ backgroundColor: label.color }}
-                              className="text-white"
-                            >
-                              {label.name}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {currentCard.dueDate && (
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground mb-2">Due date</p>
-                        <Badge variant="outline" className="gap-1">
-                          <Clock className="h-3 w-3" />
-                          {format(new Date(currentCard.dueDate), 'MMM d, yyyy')}
-                        </Badge>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <AlignLeft className="h-5 w-5 text-muted-foreground" />
-                    <h3 className="font-medium">Description</h3>
-                  </div>
-                  {editingDescription ? (
-                    <div className="space-y-2">
-                      <Textarea
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        placeholder="Add a more detailed description..."
-                        className="min-h-[100px]"
-                        autoFocus
-                      />
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={handleSaveDescription}>
-                          Save
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setDescription(currentCard.description)
-                            setEditingDescription(false)
-                          }}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setEditingDescription(true)}
-                      className="w-full text-left p-3 bg-muted/50 rounded-md text-sm hover:bg-muted transition-colors"
-                    >
-                      {currentCard.description || 'Add a more detailed description...'}
-                    </button>
-                  )}
-                </div>
-
-                {currentCard.checklists.map((checklist) => (
-                  <div key={checklist.id}>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <CheckSquare className="h-5 w-5 text-muted-foreground" />
-                        <h3 className="font-medium">{checklist.title}</h3>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteChecklist(checklist.id)}
-                      >
-                        Delete
-                      </Button>
-                    </div>
-
-                    <div className="mb-3">
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-                        <span>{Math.round(getChecklistProgress(checklist))}%</span>
-                      </div>
-                      <Progress value={getChecklistProgress(checklist)} className="h-2" />
-                    </div>
-
-                    <div className="space-y-1">
-                      {checklist.items.map((item) => (
-                        <div
-                          key={item.id}
-                          className="flex items-center gap-2 p-2 hover:bg-muted/50 rounded group"
-                        >
-                          <Checkbox
-                            checked={item.completed}
-                            onCheckedChange={(checked) =>
-                              handleToggleChecklistItem(checklist.id, item.id, checked as boolean)
-                            }
-                          />
-                          <span
-                            className={`flex-1 text-sm ${
-                              item.completed ? 'line-through text-muted-foreground' : ''
-                            }`}
-                          >
-                            {item.text}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 opacity-0 group-hover:opacity-100"
-                            onClick={() =>
-                              dispatch({
-                                type: 'DELETE_CHECKLIST_ITEM',
-                                payload: { cardId: card.id, checklistId: checklist.id, itemId: item.id },
-                              })
-                            }
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-
-                    {addingItemTo === checklist.id ? (
-                      <div className="mt-2 space-y-2">
-                        <Input
-                          value={newItemText}
-                          onChange={(e) => setNewItemText(e.target.value)}
-                          placeholder="Add an item"
-                          autoFocus
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleAddChecklistItem(checklist.id)
-                            if (e.key === 'Escape') {
-                              setNewItemText('')
-                              setAddingItemTo(null)
-                            }
-                          }}
-                        />
-                        <div className="flex gap-2">
-                          <Button size="sm" onClick={() => handleAddChecklistItem(checklist.id)}>
-                            Add
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setNewItemText('')
-                              setAddingItemTo(null)
-                            }}
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="mt-2"
-                        onClick={() => setAddingItemTo(checklist.id)}
-                      >
-                        Add an item
-                      </Button>
-                    )}
-                  </div>
-                ))}
-
-                {currentCard.attachments.length > 0 && (
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <Paperclip className="h-5 w-5 text-muted-foreground" />
-                      <h3 className="font-medium">Attachments</h3>
-                    </div>
-                    <div className="space-y-2">
-                      {currentCard.attachments.map((attachment) => (
-                        <div
-                          key={attachment.id}
-                          className="flex items-center gap-3 p-2 bg-muted/50 rounded-md group"
-                        >
-                          <div className="h-10 w-14 bg-muted rounded flex items-center justify-center">
-                            <Paperclip className="h-5 w-5 text-muted-foreground" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{attachment.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              Added {formatDistanceToNow(new Date(attachment.addedAt))} ago
-                            </p>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 opacity-0 group-hover:opacity-100"
-                            onClick={() =>
-                              dispatch({
-                                type: 'DELETE_ATTACHMENT',
-                                payload: { cardId: card.id, attachmentId: attachment.id },
-                              })
-                            }
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <Activity className="h-5 w-5 text-muted-foreground" />
-                      <h3 className="font-medium">Activity</h3>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowActivity(!showActivity)}
-                    >
-                      {showActivity ? 'Hide details' : 'Show details'}
-                    </Button>
-                  </div>
-
-                  <div className="flex gap-3 mb-4">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={state.currentUser.avatar} />
-                      <AvatarFallback className="text-xs">
-                        {state.currentUser.name.split(' ').map((n) => n[0]).join('')}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <Textarea
-                        value={newComment}
-                        onChange={(e) => setNewComment(e.target.value)}
-                        placeholder="Write a comment..."
-                        className="min-h-[60px] resize-none"
-                      />
-                      {newComment && (
-                        <Button size="sm" className="mt-2" onClick={handleAddComment}>
-                          Save
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    {currentCard.comments.map((comment) => {
-                      const member = state.members.find((m) => m.id === comment.memberId)
-                      return (
-                        <div key={comment.id} className="flex gap-3">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={member?.avatar} />
-                            <AvatarFallback className="text-xs">
-                              {member?.name.split(' ').map((n) => n[0]).join('')}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-sm">{member?.name}</span>
-                              <span className="text-xs text-muted-foreground">
-                                {formatDistanceToNow(new Date(comment.createdAt))} ago
-                              </span>
-                            </div>
-                            <p className="text-sm mt-1 p-2 bg-muted/50 rounded">{comment.text}</p>
-                          </div>
-                        </div>
-                      )
-                    })}
-
-                    {showActivity &&
-                      currentCard.activities.map((activity) => {
-                        const member = state.members.find((m) => m.id === activity.memberId)
+          <div className="flex gap-8 mt-8">
+            <div className="flex-1 space-y-8 min-w-0">
+              
+              {/* Badges Display Area */}
+              <div className="flex flex-wrap gap-6">
+                {card.members.length > 0 && (
+                  <div className="space-y-1.5">
+                    <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Members</h3>
+                    <div className="flex -space-x-2">
+                      {card.members.map(memberId => {
+                        const member = state.members.find(m => m.id === memberId)
+                        if (!member) return null
                         return (
-                          <div key={activity.id} className="flex gap-3 text-sm">
-                            <Avatar className="h-8 w-8">
-                              <AvatarImage src={member?.avatar} />
-                              <AvatarFallback className="text-xs">
-                                {member?.name.split(' ').map((n) => n[0]).join('')}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <span className="font-medium">{member?.name}</span>{' '}
-                              <span className="text-muted-foreground">{activity.action}</span>
-                              <p className="text-xs text-muted-foreground">
-                                {formatDistanceToNow(new Date(activity.createdAt))} ago
-                              </p>
-                            </div>
-                          </div>
+                          <Avatar key={member.id} className="w-8 h-8 border-2 border-background ring-1 ring-border/20 shadow-sm" title={member.name}>
+                            <AvatarImage src={member.avatar || ''} />
+                            <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">{member.name[0]}</AvatarFallback>
+                          </Avatar>
                         )
                       })}
+                    </div>
                   </div>
+                )}
+                {card.labels.length > 0 && (
+                  <div className="space-y-1.5">
+                    <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Labels</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {card.labels.map(labelId => {
+                        const label = state.labels.find(l => l.id === labelId)
+                        if (!label) return null
+                        return (
+                          <Badge key={label.id} className="h-8 px-3 rounded-md shadow-sm font-medium" style={{ backgroundColor: label.color, color: '#fff' }}>{label.name}</Badge>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+                {card.dueDate && (
+                  <div className="space-y-1.5">
+                    <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Due Date</h3>
+                    <div className="flex items-center gap-2 bg-muted/50 px-3 py-1.5 rounded-md border border-border/50">
+                      <Checkbox checked={false} />
+                      <span className="text-sm font-medium">{format(new Date(card.dueDate), 'MMM d, yyyy')}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Description */}
+              <div className="flex gap-4">
+                <AlignLeft className="w-6 h-6 text-muted-foreground shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <h3 className="text-base font-semibold">Description</h3>
+                  {isEditingDesc ? (
+                    <div className="space-y-3">
+                      <Textarea 
+                        autoFocus value={descInput} onChange={e => setDescInput(e.target.value)}
+                        placeholder="Add a more detailed description..."
+                        className="min-h-[120px] resize-y bg-background/50 border-white/20 focus-visible:ring-primary"
+                      />
+                      <div className="flex gap-2 items-center">
+                        <Button onClick={handleSaveDescription}>Save</Button>
+                        <Button variant="ghost" onClick={() => setIsEditingDesc(false)}>Cancel</Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div onClick={() => setIsEditingDesc(true)} className="bg-muted/40 hover:bg-muted/60 transition-colors rounded-lg p-3 min-h-[80px] cursor-pointer border border-transparent hover:border-border/50">
+                      {card.description ? <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{card.description}</p> : <p className="text-sm text-muted-foreground">Add a more detailed description...</p>}
+                    </div>
+                  )}
                 </div>
               </div>
 
+              {/* Checklists Display */}
+              {card.checklists.map((checklist: Checklist) => {
+                const total = checklist.items?.length || 0
+                const completed = checklist.items?.filter((i: any) => i.completed || i.isCompleted).length || 0
+                const percent = total === 0 ? 0 : Math.round((completed / total) * 100)
+
+                return (
+                  <div key={checklist.id} className="flex gap-4">
+                    <CheckSquare className="w-6 h-6 text-muted-foreground shrink-0" />
+                    <div className="flex-1 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-base font-semibold">{checklist.title}</h3>
+                        <Button variant="secondary" size="sm" className="h-7 text-xs text-destructive hover:bg-destructive hover:text-white" onClick={() => handleDeleteChecklist(checklist.id)}>Delete</Button>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-medium w-8 text-right text-muted-foreground">{percent}%</span>
+                        <Progress value={percent} className="h-2" />
+                      </div>
+                      <div className="space-y-2 pt-2">
+                        {checklist.items?.map((item: any) => (
+                          <div key={item.id} className="flex items-start gap-3 group hover:bg-muted/30 p-1.5 rounded-md transition-colors">
+                            <Checkbox checked={item.completed || item.isCompleted} onCheckedChange={() => handleToggleItem(checklist.id, item.id, item.completed || item.isCompleted)} className="mt-0.5" />
+                            <span className={`text-sm ${item.completed || item.isCompleted ? 'line-through text-muted-foreground' : ''}`}>{item.text}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="pt-2">
+                        <div className="flex gap-2">
+                          <Input placeholder="Add an item..." className="h-9 text-sm" value={newItemTexts[checklist.id] || ''} onChange={e => setNewItemTexts(prev => ({ ...prev, [checklist.id]: e.target.value }))} onKeyDown={e => { if(e.key === 'Enter') handleAddChecklistItem(checklist.id) }} />
+                          <Button size="sm" className="h-9" onClick={() => handleAddChecklistItem(checklist.id)}>Add</Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* SIDEBAR ACTIONS */}
+            <div className="w-[180px] shrink-0 space-y-6">
               <div className="space-y-2">
-                <p className="text-xs font-medium text-muted-foreground mb-2">Add to card</p>
-
+                <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Add to card</h4>
+                
+                {/* 🔥 MEMBERS POPOVER 🔥 */}
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="secondary" size="sm" className="w-full justify-start">
-                      <Users className="h-4 w-4 mr-2" />
-                      Members
-                    </Button>
+                    <Button variant="secondary" className="w-full justify-start h-9 text-sm font-medium shadow-sm"><UserPlus className="w-4 h-4 mr-2" /> Members</Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-64 p-2" align="start">
-                    <p className="text-sm font-medium mb-2 px-2">Members</p>
+                  <PopoverContent align="start" className="w-72 p-3 z-[100]">
+                    <h4 className="font-semibold text-sm mb-3 text-center">Board Members</h4>
+                    
+                    {/* 1. Create Form */}
+                    <div className="flex gap-2 mb-4 pb-4 border-b border-border/50">
+                      <Input 
+                        placeholder="Type a new name..." className="h-8 text-xs" 
+                        value={newMemberName} onChange={e => setNewMemberName(e.target.value)}
+                        onKeyDown={e => { if(e.key === 'Enter') handleAddMember() }}
+                      />
+                      <Button size="sm" className="h-8 text-xs" onClick={handleAddMember} disabled={!newMemberName || isInviting}>
+                        {isInviting ? "..." : "Create"}
+                      </Button>
+                    </div>
+
+                    {/* 2. Select from Existing */}
                     <div className="space-y-1">
-                      {state.members.map((member) => (
-                        <button
-                          key={member.id}
-                          onClick={() => handleToggleMember(member.id)}
-                          className={`w-full flex items-center gap-2 p-2 rounded hover:bg-muted text-left ${
-                            currentCard.members.includes(member.id) ? 'bg-muted' : ''
-                          }`}
-                        >
-                          <Avatar className="h-6 w-6">
-                            <AvatarImage src={member.avatar} />
-                            <AvatarFallback className="text-[10px]">
-                              {member.name.split(' ').map((n) => n[0]).join('')}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-sm">{member.name}</span>
-                          {currentCard.members.includes(member.id) && (
-                            <CheckSquare className="h-4 w-4 ml-auto text-primary" />
-                          )}
-                        </button>
-                      ))}
+                      {state.members.length === 0 ? (
+                         <p className="text-xs text-center text-muted-foreground py-2">No members yet. Create one above!</p>
+                      ) : (
+                         state.members.map(member => (
+                          <div key={member.id} onClick={(e) => handleToggleMember(e, member.id)} className="flex items-center justify-between p-2 hover:bg-muted rounded-md cursor-pointer transition-colors">
+                            <div className="flex items-center gap-2">
+                              <Avatar className="w-6 h-6"><AvatarImage src={member.avatar || ''}/><AvatarFallback className="text-[10px]">{member.name[0]}</AvatarFallback></Avatar>
+                              <span className="text-sm font-medium truncate max-w-[120px]">{member.name}</span>
+                            </div>
+                            {card.members.includes(member.id) && <Check className="w-4 h-4 text-primary shrink-0" />}
+                          </div>
+                        ))
+                      )}
                     </div>
                   </PopoverContent>
                 </Popover>
 
+                {/* 🔥 LABELS POPOVER 🔥 */}
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="secondary" size="sm" className="w-full justify-start">
-                      <Tag className="h-4 w-4 mr-2" />
-                      Labels
-                    </Button>
+                    <Button variant="secondary" className="w-full justify-start h-9 text-sm font-medium shadow-sm"><Tag className="w-4 h-4 mr-2" /> Labels</Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-64 p-2" align="start">
-                    <p className="text-sm font-medium mb-2 px-2">Labels</p>
-                    <div className="space-y-1">
-                      {state.labels.map((label) => (
-                        <button
-                          key={label.id}
-                          onClick={() => handleToggleLabel(label.id)}
-                          className={`w-full flex items-center gap-2 p-2 rounded hover:bg-muted text-left ${
-                            currentCard.labels.includes(label.id) ? 'bg-muted' : ''
-                          }`}
-                        >
-                          <span
-                            className="h-6 flex-1 rounded text-white text-sm font-medium px-2 flex items-center"
-                            style={{ backgroundColor: label.color }}
-                          >
-                            {label.name}
-                          </span>
-                          {currentCard.labels.includes(label.id) && (
-                            <CheckSquare className="h-4 w-4 text-primary" />
+                  <PopoverContent align="start" className="w-64 p-3 z-[100]">
+                    {!isCreatingLabel ? (
+                      <>
+                        <h4 className="font-semibold text-sm mb-3 text-center">Labels</h4>
+                        
+                        {/* Select from Existing */}
+                        <div className="space-y-2 mb-3">
+                          {state.labels.length === 0 ? (
+                            <p className="text-xs text-center text-muted-foreground py-2 border-b border-border/50 mb-3">No labels yet.</p>
+                          ) : (
+                            state.labels.map(label => (
+                              <div key={label.id} onClick={(e) => handleToggleLabel(e, label.id)} className="flex items-center gap-2 group cursor-pointer">
+                                <div className="flex-1 h-8 rounded-md flex items-center px-3 text-white font-medium text-sm transition-opacity group-hover:opacity-90 relative" style={{ backgroundColor: label.color }}>
+                                  {label.name}
+                                  {card.labels.includes(label.id) && <Check className="w-4 h-4 absolute right-2" />}
+                                </div>
+                              </div>
+                            ))
                           )}
-                        </button>
-                      ))}
-                    </div>
-                  </PopoverContent>
-                </Popover>
-
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="secondary" size="sm" className="w-full justify-start">
-                      <Calendar className="h-4 w-4 mr-2" />
-                      Due date
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <CalendarPicker
-                      mode="single"
-                      selected={currentCard.dueDate ? new Date(currentCard.dueDate) : undefined}
-                      onSelect={handleSetDueDate}
-                      initialFocus
-                    />
-                    {currentCard.dueDate && (
-                      <div className="p-2 border-t">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full text-destructive"
-                          onClick={() => handleSetDueDate(undefined)}
-                        >
-                          Remove due date
+                        </div>
+                        
+                        {/* Go to Create Form */}
+                        <Button variant="outline" className="w-full h-8 text-xs font-semibold" onClick={() => setIsCreatingLabel(true)}>
+                          Create a new label
+                        </Button>
+                      </>
+                    ) : (
+                      <div className="space-y-3">
+                        {/* Create Form */}
+                        <div className="flex items-center gap-2 mb-2">
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setIsCreatingLabel(false)}><ChevronLeft className="h-4 w-4"/></Button>
+                          <h4 className="font-semibold text-sm text-center flex-1 pr-6">Create Label</h4>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs font-medium text-muted-foreground">Title</label>
+                          <Input autoFocus value={newLabelName} onChange={e => setNewLabelName(e.target.value)} className="h-8 text-sm" placeholder="e.g. Bug, Feature..." />
+                        </div>
+                        <div className="space-y-2 pt-1">
+                          <label className="text-xs font-medium text-muted-foreground">Color</label>
+                          <div className="grid grid-cols-4 gap-2">
+                            {LABEL_COLORS.map(c => (
+                              <div key={c} onClick={() => setNewLabelColor(c)} className={`h-8 rounded-md cursor-pointer border-2 transition-all hover:scale-105 ${newLabelColor === c ? 'border-primary ring-2 ring-primary/20' : 'border-transparent'}`} style={{ backgroundColor: c }} />
+                            ))}
+                          </div>
+                        </div>
+                        <Button className="w-full h-8 mt-2" onClick={handleCreateLabel} disabled={isSavingLabel || !newLabelName.trim()}>
+                          {isSavingLabel ? "Creating..." : "Create Label"}
                         </Button>
                       </div>
                     )}
                   </PopoverContent>
                 </Popover>
 
-                {addingChecklist ? (
-                  <div className="space-y-2 p-2 bg-muted rounded">
-                    <Input
-                      value={newChecklistTitle}
-                      onChange={(e) => setNewChecklistTitle(e.target.value)}
-                      placeholder="Checklist title"
-                      autoFocus
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleAddChecklist()
-                        if (e.key === 'Escape') {
-                          setNewChecklistTitle('')
-                          setAddingChecklist(false)
-                        }
-                      }}
-                    />
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={handleAddChecklist}>
-                        Add
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setNewChecklistTitle('')
-                          setAddingChecklist(false)
-                        }}
-                      >
-                        Cancel
-                      </Button>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="secondary" className="w-full justify-start h-9 text-sm font-medium shadow-sm">
+                      <ImageIcon className="w-4 h-4 mr-2" /> Cover
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="w-64 p-3 z-[100]">
+                    <h4 className="font-semibold text-sm mb-3 text-center">Card Cover</h4>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Colors</label>
+                        <div className="grid grid-cols-4 gap-2">
+                          {LABEL_COLORS.map(c => (
+                            <div key={c} onClick={() => handleApplyCover(c)} className="h-8 rounded-md cursor-pointer hover:opacity-80 transition-opacity hover:scale-105" style={{ backgroundColor: c }} />
+                          ))}
+                        </div>
+                      </div>
+                      <div className="space-y-2 pt-2 border-t border-border/50">
+                        <label className="text-xs font-semibold text-muted-foreground block">Image URL</label>
+                        <Input placeholder="Paste image link..." value={coverUrlInput} onChange={(e) => setCoverUrlInput(e.target.value)} onKeyDown={(e) => { if(e.key === 'Enter') handleApplyCover(coverUrlInput) }} className="h-8 text-sm" />
+                        <Button className="w-full h-8" onClick={() => handleApplyCover(coverUrlInput)} disabled={!coverUrlInput}>Apply Image</Button>
+                      </div>
+                      {card.coverImage && (
+                        <div className="pt-2 border-t border-border/50">
+                          <Button variant="destructive" className="w-full h-8" onClick={() => handleApplyCover(null)}>Remove Cover</Button>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ) : (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="w-full justify-start"
-                    onClick={() => setAddingChecklist(true)}
-                  >
-                    <CheckSquare className="h-4 w-4 mr-2" />
-                    Checklist
-                  </Button>
-                )}
+                  </PopoverContent>
+                </Popover>
 
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="w-full justify-start"
-                  onClick={() => {
-                    dispatch({
-                      type: 'ADD_ATTACHMENT',
-                      payload: {
-                        cardId: card.id,
-                        attachment: {
-                          name: `Document-${Date.now()}.pdf`,
-                          url: '#',
-                          type: 'application/pdf',
-                          addedBy: state.currentUser.id,
-                        },
-                      },
-                    })
-                  }}
-                >
-                  <Paperclip className="h-4 w-4 mr-2" />
-                  Attachment
-                </Button>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="secondary" className="w-full justify-start h-9 text-sm font-medium shadow-sm"><CheckSquare className="w-4 h-4 mr-2" /> Checklist</Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="w-64 p-3 z-[100]">
+                    <h4 className="font-semibold text-sm mb-3 text-center">Add Checklist</h4>
+                    <div className="space-y-3">
+                      <div className="space-y-1">
+                        <label className="text-xs font-semibold text-muted-foreground">Title</label>
+                        <Input autoFocus value={newChecklistTitle} onChange={e => setNewChecklistTitle(e.target.value)} placeholder="Checklist" onKeyDown={e => { if(e.key === 'Enter') handleAddChecklist() }} />
+                      </div>
+                      <Button className="w-full" onClick={handleAddChecklist} disabled={!newChecklistTitle.trim()}>Add</Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
 
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="w-full justify-start"
-                  onClick={() => {
-                    const coverImages = [
-                      'https://images.unsplash.com/photo-1557683316-973673baf926?w=400&h=200&fit=crop',
-                      'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=400&h=200&fit=crop',
-                      'https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=400&h=200&fit=crop',
-                    ]
-                    const randomCover = coverImages[Math.floor(Math.random() * coverImages.length)]
-                    dispatch({ type: 'UPDATE_CARD', payload: { id: card.id, coverImage: randomCover } })
-                  }}
-                >
-                  <ImageIcon className="h-4 w-4 mr-2" />
-                  Cover
-                </Button>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="secondary" className="w-full justify-start h-9 text-sm font-medium shadow-sm"><Clock className="w-4 h-4 mr-2" /> Dates</Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="w-auto p-0 z-[100]">
+                    <Calendar mode="single" selected={card.dueDate ? new Date(card.dueDate) : undefined} onSelect={handleDateSelect} initialFocus />
+                    {card.dueDate && (
+                      <div className="p-3 border-t border-border">
+                        <Button variant="destructive" className="w-full h-8" onClick={() => handleDateSelect(undefined)}>Remove Due Date</Button>
+                      </div>
+                    )}
+                  </PopoverContent>
+                </Popover>
+              </div>
 
-                <Separator className="my-3" />
-
-                <p className="text-xs font-medium text-muted-foreground mb-2">Actions</p>
-
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="w-full justify-start"
-                  onClick={handleArchive}
-                >
-                  <Archive className="h-4 w-4 mr-2" />
-                  Archive
-                </Button>
-
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="w-full justify-start"
-                  onClick={handleDelete}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
+              <div className="space-y-2 pt-4">
+                <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Actions</h4>
+                <Button variant="secondary" className="w-full justify-start h-9 text-sm font-medium text-destructive hover:bg-destructive hover:text-white transition-colors" onClick={handleDeleteCard}>
+                  <Trash2 className="w-4 h-4 mr-2" /> Delete Card
                 </Button>
               </div>
+
             </div>
           </div>
-        </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   )

@@ -53,7 +53,11 @@ export const AnyNull = runtime.AnyNull
 export const ModelName = {
   Board: 'Board',
   List: 'List',
-  Card: 'Card'
+  Card: 'Card',
+  Label: 'Label',
+  Member: 'Member',
+  Checklist: 'Checklist',
+  ChecklistItem: 'ChecklistItem'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -75,6 +79,7 @@ export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof
 export const BoardScalarFieldEnum = {
   id: 'id',
   title: 'title',
+  background: 'background',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -101,12 +106,53 @@ export const CardScalarFieldEnum = {
   description: 'description',
   order: 'order',
   coverImage: 'coverImage',
+  dueDate: 'dueDate',
   listId: 'listId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type CardScalarFieldEnum = (typeof CardScalarFieldEnum)[keyof typeof CardScalarFieldEnum]
+
+
+export const LabelScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  color: 'color',
+  boardId: 'boardId'
+} as const
+
+export type LabelScalarFieldEnum = (typeof LabelScalarFieldEnum)[keyof typeof LabelScalarFieldEnum]
+
+
+export const MemberScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  email: 'email',
+  avatar: 'avatar',
+  boardId: 'boardId'
+} as const
+
+export type MemberScalarFieldEnum = (typeof MemberScalarFieldEnum)[keyof typeof MemberScalarFieldEnum]
+
+
+export const ChecklistScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  cardId: 'cardId'
+} as const
+
+export type ChecklistScalarFieldEnum = (typeof ChecklistScalarFieldEnum)[keyof typeof ChecklistScalarFieldEnum]
+
+
+export const ChecklistItemScalarFieldEnum = {
+  id: 'id',
+  text: 'text',
+  isCompleted: 'isCompleted',
+  checklistId: 'checklistId'
+} as const
+
+export type ChecklistItemScalarFieldEnum = (typeof ChecklistItemScalarFieldEnum)[keyof typeof ChecklistItemScalarFieldEnum]
 
 
 export const SortOrder = {

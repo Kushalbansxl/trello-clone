@@ -2,13 +2,14 @@
 'use client'
 
 import { createContext, useContext } from 'react'
-import type { BoardState, Card, List, Checklist, ChecklistItem, Comment, Attachment } from './types'
+import type { BoardState, Card, List, Checklist, ChecklistItem, Comment, Attachment,Label,Member } from './types'
 
 export type BoardAction =
   | { type: 'SET_INITIAL_DATA'; payload: Partial<BoardState> }
   | { type: 'SET_SEARCH_QUERY'; payload: string }
   | { type: 'SET_FILTER_LABELS'; payload: string[] }
   | { type: 'SET_FILTER_MEMBERS'; payload: string[] }
+  | { type: 'DELETE_LIST'; payload: string }
   | { type: 'SET_FILTER_DUE_DATE'; payload: BoardState['filterDueDate'] }
   | { type: 'UPDATE_BOARD_TITLE'; payload: string }
   | { type: 'UPDATE_BOARD_BACKGROUND'; payload: string }
@@ -33,6 +34,8 @@ export type BoardAction =
   | { type: 'ADD_COMMENT'; payload: { cardId: string; text: string } }
   | { type: 'ADD_ATTACHMENT'; payload: { cardId: string; attachment: Omit<Attachment, 'id' | 'addedAt'> } }
   | { type: 'DELETE_ATTACHMENT'; payload: { cardId: string; attachmentId: string } }
+  | { type: 'ADD_LABEL'; payload: Label }
+  | { type: 'ADD_MEMBER'; payload: Member }
 
 function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
@@ -60,6 +63,26 @@ export function boardReducer(state: BoardState, action: BoardAction): BoardState
 
     case 'UPDATE_BOARD_BACKGROUND':
       return { ...state, board: { ...state.board, background: action.payload } }
+    case 'ADD_LABEL':
+      return { ...state, labels: [...state.labels, action.payload] }
+
+    case 'ADD_MEMBER':
+      return { ...state, members: [...state.members, action.payload] }
+      
+    case 'DELETE_LIST': {
+      const listIdToDelete = action.payload
+      const newLists = { ...state.lists }
+      delete newLists[listIdToDelete] // Remove list object
+      
+      return {
+        ...state,
+        board: {
+          ...state.board,
+          lists: state.board.lists.filter(id => id !== listIdToDelete) // Remove list ID from board array
+        },
+        lists: newLists
+      }
+    }
 
     case 'UPDATE_LIST_COLOR': {
       const list = state.lists[action.payload.listId]
