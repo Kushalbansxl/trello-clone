@@ -31,6 +31,8 @@ import { CardDetailModal } from './card-detail-modal'
 import type { Card, List } from '@/lib/types'
 import { isPast, isToday, isThisWeek, parseISO } from 'date-fns'
 import { getBoards, createList, updateCardOrder, updateListOrder } from '@/actions/board'
+import { PlannerView } from './planner-view'
+import { InboxView } from './inbox-view'
 
 export function KanbanBoard() {
   const { state, dispatch } = useBoardContext()
@@ -40,7 +42,7 @@ export function KanbanBoard() {
   const [newListTitle, setNewListTitle] = useState('')
   const [selectedCard, setSelectedCard] = useState<Card | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-
+  const [currentView, setCurrentView] = useState<'inbox' | 'board' | 'planner'>('board')
   useEffect(() => {
     async function loadBoardData() {
       try {
@@ -324,31 +326,39 @@ const sensors = useSensors(
         <ScrollArea className="h-full w-full">
           <div className="p-6 min-h-full pb-32">
             <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
-              <SortableContext items={state.board?.lists || []} strategy={horizontalListSortingStrategy}>
-                <div className="flex gap-6 items-start">
-                  {state.board.lists.map((listId) => {
-                    const list = state.lists[listId]
-                    if (!list) return null
-                    return <KanbanList key={list.id} list={list} cards={getCardsForList(list.id)} onCardClick={(c) => setSelectedCard(c)} />
-                  })}
-                  <div className="flex-shrink-0 w-80">
-                    {isAddingList ? (
-                      <div className="bg-background/80 backdrop-blur-xl border border-white/20 shadow-xl rounded-2xl p-4 space-y-3">
-                        <Input autoFocus value={newListTitle} onChange={(e) => setNewListTitle(e.target.value)} placeholder="Enter list title..." onKeyDown={(e) => e.key === 'Enter' && handleAddList()} className="border-white/20 bg-background/50" />
-                        <div className="flex items-center gap-2">
-                          <Button onClick={handleAddList} className="w-full shadow-md">Add list</Button>
-                          <Button variant="ghost" size="icon" onClick={() => setIsAddingList(false)}><X className="h-5 w-5" /></Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <Button variant="ghost" className="w-full h-14 justify-start bg-white/10 hover:bg-white/20 text-white border border-dashed border-white/40 rounded-2xl shadow-sm backdrop-blur-sm transition-all" onClick={() => setIsAddingList(true)}>
-                        <Plus className="h-5 w-5 mr-2" /> Add another list
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </SortableContext>
               
+              {/* CONDITIONAL RENDER: BOARD OR PLANNER */}
+              {currentView === 'board' ? (
+                <SortableContext items={state.board?.lists || []} strategy={horizontalListSortingStrategy}>
+                  <div className="flex gap-6 items-start">
+                    {state.board.lists.map((listId) => {
+                      const list = state.lists[listId]
+                      if (!list) return null
+                      return <KanbanList key={list.id} list={list} cards={getCardsForList(list.id)} onCardClick={(c) => setSelectedCard(c)} />
+                    })}
+                    <div className="flex-shrink-0 w-80">
+                      {isAddingList ? (
+                        <div className="bg-background/80 backdrop-blur-xl border border-white/20 shadow-xl rounded-2xl p-4 space-y-3">
+                          <Input autoFocus value={newListTitle} onChange={(e) => setNewListTitle(e.target.value)} placeholder="Enter list title..." onKeyDown={(e) => e.key === 'Enter' && handleAddList()} className="border-white/20 bg-background/50" />
+                          <div className="flex items-center gap-2">
+                            <Button onClick={handleAddList} className="w-full shadow-md">Add list</Button>
+                            <Button variant="ghost" size="icon" onClick={() => setIsAddingList(false)}><X className="h-5 w-5" /></Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <Button variant="ghost" className="w-full h-14 justify-start bg-white/10 hover:bg-white/20 text-white border border-dashed border-white/40 rounded-2xl shadow-sm backdrop-blur-sm transition-all" onClick={() => setIsAddingList(true)}>
+                          <Plus className="h-5 w-5 mr-2" /> Add another list
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </SortableContext>
+              ) : currentView === 'planner' ? (
+                <PlannerView onCardClick={(c) => setSelectedCard(c)} />
+              ) : (
+                <InboxView onCardClick={(c) => setSelectedCard(c)} />
+              )}
+
               <DragOverlay>
                 {activeCard && <div className="rotate-3 scale-105 shadow-2xl opacity-90"><KanbanCard card={activeCard} onClick={() => {}} /></div>}
                 {activeList && <div className="w-80 bg-background/90 backdrop-blur-xl border border-white/20 shadow-2xl rounded-2xl p-4 rotate-2 scale-105 opacity-90"><span className="font-bold text-base">{activeList.title}</span></div>}
@@ -359,20 +369,36 @@ const sensors = useSensors(
         </ScrollArea>
       </div>
 
-      {/* MAC OS STYLE BOTTOM DOCK */}
-      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-background/60 backdrop-blur-2xl border border-border shadow-2xl rounded-[2rem] p-2 flex items-center gap-2 z-50">
-        <Button variant="ghost" className="rounded-2xl px-6 py-7 text-muted-foreground hover:text-foreground hover:bg-foreground/5 flex flex-col gap-1.5 h-auto transition-all">
+      {/* DYNAMIC MAC OS STYLE BOTTOM DOCK */}
+      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-background/60 backdrop-blur-2xl border border-border shadow-2xl rounded-[2rem] p-2 flex items-center gap-2 z-50 transition-all">
+        
+        <Button 
+          variant={currentView === 'inbox' ? 'secondary' : 'ghost'} 
+          onClick={() => setCurrentView('inbox')}
+          className={`rounded-2xl px-6 py-7 flex flex-col gap-1.5 h-auto transition-all ${currentView === 'inbox' ? 'bg-primary/15 text-primary scale-105 shadow-inner border border-primary/20' : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'}`}
+        >
           <Inbox className="h-5 w-5" />
           <span className="text-[11px] font-semibold tracking-wide">Inbox</span>
         </Button>
-        <Button variant="secondary" className="rounded-2xl px-6 py-7 bg-primary/15 text-primary hover:bg-primary/25 flex flex-col gap-1.5 h-auto shadow-inner border border-primary/20 transition-all scale-105">
+        
+        <Button 
+          variant={currentView === 'board' ? 'secondary' : 'ghost'} 
+          onClick={() => setCurrentView('board')}
+          className={`rounded-2xl px-6 py-7 flex flex-col gap-1.5 h-auto transition-all ${currentView === 'board' ? 'bg-primary/15 text-primary scale-105 shadow-inner border border-primary/20' : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'}`}
+        >
           <LayoutDashboard className="h-5 w-5" />
           <span className="text-[11px] font-bold tracking-wide">Board</span>
         </Button>
-        <Button variant="ghost" className="rounded-2xl px-6 py-7 text-muted-foreground hover:text-foreground hover:bg-foreground/5 flex flex-col gap-1.5 h-auto transition-all">
+        
+        <Button 
+          variant={currentView === 'planner' ? 'secondary' : 'ghost'} 
+          onClick={() => setCurrentView('planner')}
+          className={`rounded-2xl px-6 py-7 flex flex-col gap-1.5 h-auto transition-all ${currentView === 'planner' ? 'bg-primary/15 text-primary scale-105 shadow-inner border border-primary/20' : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'}`}
+        >
           <CalendarIcon className="h-5 w-5" />
           <span className="text-[11px] font-semibold tracking-wide">Planner</span>
         </Button>
+
       </div>
 
       {selectedCard && <CardDetailModal card={selectedCard} onClose={() => setSelectedCard(null)} />}
