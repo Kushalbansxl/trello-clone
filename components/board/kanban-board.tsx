@@ -43,32 +43,27 @@ export function KanbanBoard() {
   const [selectedCard, setSelectedCard] = useState<Card | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [currentView, setCurrentView] = useState<'inbox' | 'board' | 'planner'>('board')
+  const [initialListOrder, setInitialListOrder] = useState<string[]>([])
+
   useEffect(() => {
     async function loadBoardData() {
       try {
         const data = await getBoards()
         if (data && data.length > 0) {
-          
-          // 1. Check URL for a specific board ID, otherwise fallback to the first board
           const params = new URLSearchParams(window.location.search)
           const requestedId = params.get('boardId')
           let activeApiBoard = data.find((b: any) => b.id === requestedId)
 
           if (!activeApiBoard) {
-            activeApiBoard = data[0] // Fallback if ID doesn't exist
+            activeApiBoard = data[0]
           }
 
-          // 2. Generate list of all boards for the Dropdown menu
           const availableBoards = data.map((b: any) => ({ id: b.id, title: b.title }))
-
-          // 3. Extract Board-level Labels and Members
           const boardLabels = activeApiBoard.labels || []
           const boardMembers = activeApiBoard.members || []
-
           const normalizedLists: Record<string, List> = {}
           const normalizedCards: Record<string, Card> = {}
           const listIds: string[] = []
-
           const sortedLists = [...(activeApiBoard.lists || [])].sort((a, b) => a.order - b.order)
 
           sortedLists.forEach((list: any) => {
@@ -81,10 +76,8 @@ export function KanbanBoard() {
               normalizedCards[card.id] = { 
                 ...card, 
                 position: card.order,
-                // Extract just the IDs for the state array
                 labels: card.labels?.map((l: any) => l.id) || [], 
                 members: card.members?.map((m: any) => m.id) || [], 
-                // Map the Prisma checklist schema to your UI schema
                 checklists: card.checklists?.map((cl: any) => ({
                    id: cl.id,
                    title: cl.title,
@@ -123,9 +116,9 @@ export function KanbanBoard() {
               },
               lists: normalizedLists,
               cards: normalizedCards,
-              labels: boardLabels,    // Inject real labels
-              members: boardMembers,  // Inject real members
-              availableBoards         // Inject available boards into global context
+              labels: boardLabels,
+              members: boardMembers,
+              availableBoards
             }
           })
         }
@@ -138,15 +131,15 @@ export function KanbanBoard() {
     loadBoardData()
   }, [dispatch])
 
-const sensors = useSensors(
+  const sensors = useSensors(
     useSensor(MouseSensor, {
       activationConstraint: {
-        distance: 5, // Mouse ko kam se kam 5px hilna padega drag start hone ke liye
+        distance: 5,
       },
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 200, // Mobile par 200ms tak daba ke rakhna padega drag ke liye
+        delay: 200,
         tolerance: 5,
       },
     }),
@@ -165,6 +158,7 @@ const sensors = useSensors(
       setActiveCard(state.cards[activeId])
     } else if (state.lists[activeId]) {
       setActiveList(state.lists[activeId])
+      setInitialListOrder(state.board.lists)
     }
   }
 
@@ -174,6 +168,26 @@ const sensors = useSensors(
 
     const activeId = active.id as string
     const overId = over.id as string
+
+    if (state.lists[activeId]) {
+      let targetListId = overId
+      
+      if (state.cards[overId]) {
+        const foundContainer = findContainer(overId)
+        if (foundContainer) targetListId = foundContainer
+      }
+
+      if (state.lists[targetListId] && activeId !== targetListId) {
+        const oldIndex = state.board.lists.indexOf(activeId)
+        const newIndex = state.board.lists.indexOf(targetListId)
+
+        if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+          const newOrder = arrayMove(state.board.lists, oldIndex, newIndex)
+          dispatch({ type: 'REORDER_LISTS', payload: newOrder })
+        }
+      }
+      return
+    }
 
     const activeContainer = findContainer(activeId)
     const overContainer = findContainer(overId)
@@ -199,20 +213,24 @@ const sensors = useSensors(
     setActiveCard(null)
     setActiveList(null)
 
-    if (!over) return
+    if (!over) {
+      if (initialListOrder.length > 0) {
+        dispatch({ type: 'REORDER_LISTS', payload: initialListOrder })
+      }
+      setInitialListOrder([])
+      return
+    }
 
     const activeId = active.id as string
     const overId = over.id as string
+    const isActiveList = !!state.lists[activeId]
 
-    if (state.lists[activeId] && state.lists[overId]) {
-      const oldIndex = state.board.lists.indexOf(activeId)
-      const newIndex = state.board.lists.indexOf(overId)
-
-      if (oldIndex !== newIndex) {
-        const newOrder = arrayMove(state.board.lists, oldIndex, newIndex)
-        dispatch({ type: 'REORDER_LISTS', payload: newOrder })
-        await updateListOrder(newOrder.map((id, index) => ({ id, order: index })))
+    if (isActiveList) {
+      const currentOrder = state.board.lists
+      if (JSON.stringify(initialListOrder) !== JSON.stringify(currentOrder)) {
+        await updateListOrder(currentOrder.map((id, index) => ({ id, order: index })))
       }
+      setInitialListOrder([])
       return
     }
 
@@ -245,14 +263,21 @@ const sensors = useSensors(
     }
   }
 
+  const handleDragCancel = () => {
+    setActiveCard(null)
+    setActiveList(null)
+    if (initialListOrder.length > 0) {
+      dispatch({ type: 'REORDER_LISTS', payload: initialListOrder })
+      setInitialListOrder([])
+    }
+  }
+
   const getCardsForList = (listId: string) => {
     const list = state.lists[listId]
     if (!list) return []
     
-    // Pehle us list ke saare cards nikaalo
     let filteredCards = list.cards.map((id) => state.cards[id]).filter(Boolean)
 
-    // 1. SEARCH FILTER (Title ya Description mein text match)
     if (state.searchQuery.trim()) {
       const query = state.searchQuery.toLowerCase().trim()
       filteredCards = filteredCards.filter(card => 
@@ -261,30 +286,25 @@ const sensors = useSensors(
       )
     }
 
-    // 2. LABELS FILTER (Card mein koi ek selected label hona chahiye)
     if (state.filterLabels.length > 0) {
       filteredCards = filteredCards.filter(card => 
         card.labels.some(labelId => state.filterLabels.includes(labelId))
       )
     }
 
-    // 3. MEMBERS FILTER (Card mein koi ek selected member hona chahiye)
     if (state.filterMembers.length > 0) {
       filteredCards = filteredCards.filter(card => 
         card.members.some(memberId => state.filterMembers.includes(memberId))
       )
     }
 
-    // 4. DUE DATE FILTER
     if (state.filterDueDate !== 'all') {
       filteredCards = filteredCards.filter(card => {
         if (!card.dueDate) {
-           // Agar user "No due date" maang raha hai, toh jinke paas date nahi hai unko pass karo
            return state.filterDueDate === 'noDueDate'
         }
         
-        // Agar date hai, toh check karo
-        if (state.filterDueDate === 'noDueDate') return false // Kyunki iske paas toh date hai
+        if (state.filterDueDate === 'noDueDate') return false
         
         const dateObj = new Date(card.dueDate)
         
@@ -311,23 +331,52 @@ const sensors = useSensors(
     }
   }
 
-  if (isLoading) return <div className="flex-1 flex items-center justify-center h-full"><Loader2 className="h-12 w-12 animate-spin text-white/80" /></div>
+  if (isLoading) {
+    return (
+      <div className="flex-1 h-[calc(100vh-56px)] p-6 flex gap-6 overflow-hidden bg-black/20">
+        {[1, 2, 3, 4].map((i) => (
+          <div 
+            key={i} 
+            className="flex-shrink-0 w-[320px] rounded-2xl bg-white/5 border border-white/10 p-4 space-y-4 animate-pulse backdrop-blur-md"
+          >
+            <div className="flex items-center justify-between">
+              <div className="h-5 bg-white/20 rounded-md w-1/3"></div>
+              <div className="h-6 w-8 bg-white/10 rounded-md"></div>
+            </div>
+            
+            <div className="space-y-3">
+              <div className="h-24 bg-white/10 rounded-xl"></div>
+              <div className="h-32 bg-white/10 rounded-xl"></div>
+              <div className="h-20 bg-white/10 rounded-xl"></div>
+            </div>
 
+            <div className="h-10 bg-white/5 rounded-xl w-full mt-4"></div>
+          </div>
+        ))}
+      </div>
+    )
+  }
   return (
     <>
       <div 
         className="flex-1 h-[calc(100vh-56px)] overflow-hidden bg-cover bg-center relative select-none touch-none" 
         style={{ 
           background: state.board?.background,
-          WebkitUserSelect: 'none', // Safari fix
-          WebkitTouchCallout: 'none' // iOS context menu fix
+          WebkitUserSelect: 'none',
+          WebkitTouchCallout: 'none'
         }}
       >
         <ScrollArea className="h-full w-full">
           <div className="p-6 min-h-full pb-32">
-            <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
+            <DndContext 
+              sensors={sensors} 
+              collisionDetection={closestCorners} 
+              onDragStart={handleDragStart} 
+              onDragOver={handleDragOver} 
+              onDragEnd={handleDragEnd}
+              onDragCancel={handleDragCancel}
+            >
               
-              {/* CONDITIONAL RENDER: BOARD OR PLANNER */}
               {currentView === 'board' ? (
                 <SortableContext items={state.board?.lists || []} strategy={horizontalListSortingStrategy}>
                   <div className="flex gap-6 items-start">
@@ -369,7 +418,6 @@ const sensors = useSensors(
         </ScrollArea>
       </div>
 
-     {/* SLEEK FLOATING GLASS DOCK (Original Position Maintained) */}
       <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-black/50 backdrop-blur-3xl border border-white/10 shadow-2xl rounded-full p-1.5 flex items-center gap-1 z-50 transition-all">
         
         <button 

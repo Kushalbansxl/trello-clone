@@ -50,6 +50,29 @@ export async function updateBoardBackground(boardId: string, background: string)
   }
 }
 
+// --- UPDATE BOARD NAME  ---
+export async function updateBoard(boardId: string, title: string) {
+  try {
+    if (!title || title.trim().length < 1) {
+      return { success: false, error: "Title cannot be empty" };
+    }
+
+    await prisma.board.update({
+      where: { id: boardId },
+      data: { title }
+    });
+    
+    revalidatePath('/');
+    // Agar single board page par ho toh usse bhi update karega
+    revalidatePath(`/board/${boardId}`); 
+    
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to update board title:", error);
+    return { success: false };
+  }
+}
+
 // 2. Create a new list
 export async function createList(boardId: string, title: string, order: number) {
   try {
@@ -133,7 +156,6 @@ export async function updateCardCover(cardId: string, coverImage: string | null)
     return { success: false };
   }
 }
-// actions/board.ts
 
 // 8. Create a new Board
 export async function createBoard(title: string, background?: string) {
@@ -151,17 +173,16 @@ export async function createBoard(title: string, background?: string) {
     return { success: false };
   }
 }
+
 // --- LABELS ---
 export async function toggleCardLabel(cardId: string, labelId: string, hasLabel: boolean) {
   try {
     if (hasLabel) {
-      // Disconnect
       await prisma.card.update({
         where: { id: cardId },
         data: { labels: { disconnect: { id: labelId } } }
       })
     } else {
-      // Connect
       await prisma.card.update({
         where: { id: cardId },
         data: { labels: { connect: { id: labelId } } }
@@ -290,8 +311,6 @@ export async function deleteCard(cardId: string) {
 // --- DELETE LIST ---
 export async function deleteList(listId: string) {
   try {
-    // Note: Prisma schema mein 'Cascade' delete on hai, 
-    // toh list delete hone par uske andar ke saare cards automatically delete ho jayenge!
     await prisma.list.delete({
       where: { id: listId }
     })
@@ -315,10 +334,10 @@ export async function deleteBoard(boardId: string) {
     return { success: false };
   }
 }
+
 // --- 🔥 ADD MEMBER BY NAME 🔥 ---
 export async function addMemberByName(boardId: string, name: string) {
   try {
-    // Database schema satisfy karne ke liye ek random dummy email generate
     const dummyEmail = `${name.replace(/\s+/g, '').toLowerCase()}-${Date.now()}@board.local`;
     const member = await prisma.member.create({
       data: { 

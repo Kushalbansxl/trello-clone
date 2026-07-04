@@ -56,9 +56,14 @@ export function CardDetailModal({ card: initialCard, onClose }: CardDetailModalP
   // --- ACTIONS ---
 
   const handleApplyCover = async (value: string | null) => {
-    dispatch({ type: 'UPDATE_CARD_COVER', payload: { cardId: card.id, coverImage: value } })
-    await updateCardCover(card.id, value)
+  dispatch({ type: 'UPDATE_CARD_COVER', payload: { cardId: card.id, coverImage: value } })
+  await updateCardCover(card.id, value)
+  
+  // Clear the input field if a URL was applied
+  if (value && !value.startsWith('#')) {
+    setCoverUrlInput('')
   }
+}
 
   const handleToggleLabel = async (e: React.MouseEvent, labelId: string) => {
     e.preventDefault()
@@ -172,7 +177,12 @@ export function CardDetailModal({ card: initialCard, onClose }: CardDetailModalP
             {card.coverImage.startsWith('#') ? (
                <div className="w-full h-full" style={{ backgroundColor: card.coverImage }} />
             ) : (
-               <img src={card.coverImage} alt="Cover" className="w-full h-full object-cover" crossOrigin="anonymous" />
+               <img 
+                 src={card.coverImage} 
+                 alt="Cover" 
+                 className="w-full h-full object-cover" 
+                 onError={(e) => { e.currentTarget.style.display = 'none' }} 
+               />
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 to-transparent opacity-90" />
           </div>

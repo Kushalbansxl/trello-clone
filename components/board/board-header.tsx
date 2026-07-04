@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useBoardContext } from '@/lib/board-store'
 import { 
   Star, Users, MoreHorizontal, LayoutDashboard, Plus, 
-  Check, X, Palette, UploadCloud, Trash2, ChevronDown 
+  Check, X, Palette, UploadCloud, Trash2, ChevronDown, Edit2 
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,7 +20,12 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { createBoard, updateBoardBackground, deleteBoard } from '@/actions/board'
+import { 
+  createBoard, 
+  updateBoardBackground, 
+  deleteBoard, 
+  updateBoard // Import the new updateBoard action
+} from '@/actions/board'
 
 const PRESET_BACKGROUNDS = [
   'linear-gradient(to right bottom, #6366f1, #a855f7, #ec4899)',
@@ -41,9 +46,42 @@ export function BoardHeader() {
   const [isUploading, setIsUploading] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false) 
   
+  // --- 🔥 NEW: RENAME STATES ---
+  const [isEditingName, setIsEditingName] = useState(false)
+  const [nameValue, setNameValue] = useState('')
+
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // Sync internal name state when board changes
+  useEffect(() => {
+    if (state?.board?.title) {
+      setNameValue(state.board.title)
+    }
+  }, [state?.board?.title])
+
   if (!state?.board) return null
+
+  // --- 🔥 NEW: HANDLE RENAME ---
+  const handleRenameBoard = async () => {
+    const trimmed = nameValue.trim()
+    if (!trimmed || trimmed === state.board.title) {
+      setIsEditingName(false)
+      setNameValue(state.board.title)
+      return
+    }
+
+    // Optimistic UI Update
+    dispatch({ type: 'UPDATE_BOARD_TITLE', payload: trimmed })
+    setIsEditingName(false)
+
+    const res = await updateBoard(state.board.id, trimmed)
+    if (!res.success) {
+      alert("Failed to rename board")
+      // Revert if failed
+      dispatch({ type: 'UPDATE_BOARD_TITLE', payload: state.board.title })
+      setNameValue(state.board.title)
+    }
+  }
 
   const handleCreateBoard = async () => {
     if (!newBoardTitle.trim()) return
@@ -104,16 +142,15 @@ export function BoardHeader() {
     <div className="flex h-16 items-center justify-between px-4 md:px-6 bg-black/30 backdrop-blur-2xl border-b border-white/10 relative z-10 text-white shadow-sm">
       <div className="flex items-center gap-3">
         
-        {/* 🔥 PREMIUM BOARD SWITCHER BUTTON 🔥 */}
+        {/* PREMIUM BOARD SWITCHER BUTTON */}
         <DropdownMenu onOpenChange={(open) => { if (!open) setIsCreating(false) }}>
           <DropdownMenuTrigger asChild>
             <Button 
               variant="ghost" 
-              className="text-lg font-bold px-4 h-10 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-xl border border-white/10 shadow-sm transition-all duration-300 gap-2 focus-visible:ring-1 focus-visible:ring-white/50"
+              size="icon"
+              className="h-10 w-10 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-xl border border-white/10 shadow-sm transition-all"
             >
               <LayoutDashboard className="h-4 w-4 text-white/80" />
-              <span className="tracking-tight">{state.board.title}</span>
-              <ChevronDown className="h-4 w-4 text-white/50" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-64 z-50 bg-black/80 backdrop-blur-3xl border-white/10 text-white rounded-2xl shadow-2xl p-2">
@@ -161,6 +198,28 @@ export function BoardHeader() {
           </DropdownMenuContent>
         </DropdownMenu>
 
+        {/* 🔥 EDITABLE BOARD TITLE 🔥 */}
+        <div className="flex items-center px-1">
+          {isEditingName ? (
+            <Input
+              autoFocus
+              value={nameValue}
+              onChange={(e) => setNameValue(e.target.value)}
+              onBlur={handleRenameBoard}
+              onKeyDown={(e) => e.key === 'Enter' && handleRenameBoard()}
+              className="h-9 font-bold text-lg bg-white/10 text-white border-white/20 focus-visible:ring-1 focus-visible:ring-white w-auto min-w-[120px] max-w-[250px]"
+            />
+          ) : (
+            <div 
+              onClick={() => setIsEditingName(true)}
+              className="group flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-xl hover:bg-white/10 transition-all border border-transparent hover:border-white/10"
+            >
+              <span className="text-lg font-bold tracking-tight">{state.board.title}</span>
+              <Edit2 className="h-3.5 w-3.5 text-white/0 group-hover:text-white/40 transition-colors" />
+            </div>
+          )}
+        </div>
+
         <div className="h-5 w-px bg-white/20 hidden sm:block ml-2" />
         <Button variant="ghost" className="h-9 hover:bg-white/20 font-medium hidden sm:flex text-white/80 rounded-xl px-3 transition-colors">
           <Users className="mr-2 h-4 w-4" />Workspace visible
@@ -183,7 +242,6 @@ export function BoardHeader() {
           </PopoverTrigger>
           <PopoverContent align="end" className="w-72 p-4 bg-black/80 backdrop-blur-3xl border-white/10 text-white rounded-2xl shadow-2xl z-50">
             <h4 className="font-semibold text-sm mb-4 text-center">Board Background</h4>
-            
             <div className="space-y-4">
               <div>
                 <label className="text-[10px] uppercase tracking-widest text-white/50 mb-2 block font-bold">Colors & Gradients</label>
@@ -200,12 +258,8 @@ export function BoardHeader() {
               </div>
 
               <div className="space-y-2 pt-4 border-t border-white/10">
-                <label className="text-[10px] uppercase tracking-widest text-white/50 block font-bold mb-2">
-                  Custom Background
-                </label>
-                
+                <label className="text-[10px] uppercase tracking-widest text-white/50 block font-bold mb-2">Custom Background</label>
                 <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleImageUpload} />
-                
                 <Button 
                   variant="outline" 
                   className="w-full h-10 border-dashed border-2 border-white/20 bg-white/5 hover:bg-white/10 text-white hover:text-white transition-all rounded-xl"
@@ -215,7 +269,6 @@ export function BoardHeader() {
                   <UploadCloud className="w-4 h-4 mr-2 text-white/70" />
                   {isUploading ? "Uploading..." : "Upload Image"}
                 </Button>
-                <p className="text-[10px] text-white/40 text-center mt-1">Max size: 2MB (JPG, PNG)</p>
               </div>
             </div>
           </PopoverContent>

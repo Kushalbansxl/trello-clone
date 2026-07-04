@@ -37,7 +37,7 @@ export function NavigationBar() {
   return (
     <nav className="h-14 bg-black/20 backdrop-blur-md border-b border-white/10 flex items-center justify-between px-4 md:px-6 gap-4 relative z-50">
       
-      {/* LOGO AREA - RESTORED ORIGINAL LOGO 🔥 */}
+      {/* LOGO AREA - RESTORED ORIGINAL LOGO  */}
       <div className="flex items-center gap-4 shrink-0">
         <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
           <div className="w-8 h-8 rounded bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center">

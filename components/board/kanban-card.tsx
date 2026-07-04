@@ -85,7 +85,12 @@ export function KanbanCard({ card, onClick }: KanbanCardProps) {
             {isColorCover ? (
               <div className="w-full h-full" style={{ backgroundColor: card.coverImage }} />
             ) : (
-              <img src={card.coverImage} alt="Cover" className="w-full h-full object-cover transition-transform duration-700 group-hover/image:scale-105" crossOrigin="anonymous" />
+              <img 
+                src={card.coverImage} 
+                alt="Cover" 
+                className="w-full h-full object-cover transition-transform duration-700 group-hover/image:scale-105" 
+                onError={(e) => { e.currentTarget.style.display = 'none' }} 
+              />
             )}
             <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/image:opacity-100 transition-opacity" />
             <Button 

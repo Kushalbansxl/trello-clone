@@ -16,8 +16,8 @@ model Board {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   lists      List[]
-  labels     Label[]  // Labels are often board-specific
-  members    Member[] // Members who have access to the board
+  labels     Label[]  
+  members    Member[] 
 }
 
 model List {
